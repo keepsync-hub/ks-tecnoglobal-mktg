@@ -417,18 +417,18 @@
   var BRAND = { rojo:"E1251B", rojoHex:"#E1251B", gris:"58595B", inkPdf:[33,30,30], grisPdf:[88,89,91], lightPdf:[247,245,245] };
 
   var LOGO_SVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 150" role="img" aria-label="TecnoGlobal">'+
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 150" role="img" aria-label="TecnoGlobal">'+
     '<g fill="none" stroke="#E1251B" stroke-width="2.4">'+
-      '<circle cx="300" cy="70" r="66" opacity="0.10"/>'+
-      '<circle cx="300" cy="70" r="55" opacity="0.16"/>'+
-      '<circle cx="300" cy="70" r="44" opacity="0.24"/>'+
-      '<circle cx="300" cy="70" r="34" opacity="0.36"/>'+
-      '<circle cx="300" cy="70" r="24" opacity="0.55"/>'+
-      '<circle cx="300" cy="70" r="15" opacity="0.8"/>'+
+      '<circle cx="300" cy="70" r="60" opacity="0.10"/>'+
+      '<circle cx="300" cy="70" r="50" opacity="0.16"/>'+
+      '<circle cx="300" cy="70" r="40" opacity="0.24"/>'+
+      '<circle cx="300" cy="70" r="31" opacity="0.36"/>'+
+      '<circle cx="300" cy="70" r="22" opacity="0.55"/>'+
+      '<circle cx="300" cy="70" r="14" opacity="0.8"/>'+
       '<circle cx="300" cy="70" r="7" opacity="1"/>'+
     '</g>'+
-    '<text x="16" y="98" font-family="Arial,Helvetica,sans-serif" font-size="76" font-weight="800" letter-spacing="-3" fill="#58595B">TECNO</text>'+
-    '<text x="300" y="98" font-family="Arial,Helvetica,sans-serif" font-size="76" font-weight="800" letter-spacing="-3" fill="#E1251B">GLOBAL</text>'+
+    '<text x="18" y="98" font-family="Arial,Helvetica,sans-serif" font-size="74" font-weight="800" letter-spacing="-3" fill="#58595B">TECNO</text>'+
+    '<text x="300" y="98" font-family="Arial,Helvetica,sans-serif" font-size="74" font-weight="800" letter-spacing="-3" fill="#E1251B">GLOBAL</text>'+
     '</svg>';
 
   var LOGO_PNG = null;   // rasterized data URI for PPTX/PDF, filled on load
@@ -439,8 +439,9 @@
   function loadLogo(){
     return new Promise(function(res){
       function raster(img,w,h,headerNode){
-        var scale=3;
-        var c=document.createElement("canvas"); c.width=Math.round(w*scale); c.height=Math.round(h*scale);
+        // Render at a capped width so a large source logo can't bloat the PPTX/PDF.
+        var targetW=900, targetH=Math.max(1,Math.round(targetW*h/w));
+        var c=document.createElement("canvas"); c.width=targetW; c.height=targetH;
         var ctx=c.getContext("2d"); ctx.clearRect(0,0,c.width,c.height); ctx.drawImage(img,0,0,c.width,c.height);
         try{ LOGO_PNG=c.toDataURL("image/png"); LOGO_W=w; LOGO_H=h; }catch(e){}
         $("#brandLogo").innerHTML=""; $("#brandLogo").appendChild(headerNode);
