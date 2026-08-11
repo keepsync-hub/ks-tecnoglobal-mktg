@@ -8,7 +8,10 @@ name: Deploy portal to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    # Incluye la rama por defecto del repo: el entorno github-pages solo permite
+    # desplegar desde la rama por defecto. Cuando se defina `main` como rama por
+    # defecto, basta dejar [main].
+    branches: [main, claude/tecnoglobal-document-transform-zregzv]
   workflow_dispatch:
 
 permissions:
