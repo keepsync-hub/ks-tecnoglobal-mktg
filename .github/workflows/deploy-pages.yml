@@ -1,0 +1,54 @@
+name: Deploy portal to GitHub Pages
+
+# Publica el portal estático en GitHub Pages usando GitHub Actions como fuente.
+# `configure-pages` con enablement:true habilita Pages automáticamente (source =
+# GitHub Actions) sin pasos manuales en Settings. Regenera index.html desde
+# src/portal.template.html con build.py antes de subir, para garantizar que el
+# sitio desplegado siempre coincide con la fuente.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Build index.html
+        run: python build.py
+
+      - name: Configure Pages (enable if needed)
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Sube el repo completo: index.html (raíz) + vendor/ + assets/.
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
