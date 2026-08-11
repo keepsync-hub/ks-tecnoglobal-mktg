@@ -87,3 +87,12 @@ python3 -m http.server 8000      # sirve el repo
 ```
 
 Sírvelo por HTTP (no `file://`) para que el logo y las librerías carguen correctamente.
+
+## Pruebas
+
+```bash
+npm i playwright-core
+node tests/smoke.cjs   # sube un Excel, genera y valida PPTX + PDF
+```
+
+Ver `tests/README.md` para detalles.

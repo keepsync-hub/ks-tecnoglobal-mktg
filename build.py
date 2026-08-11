@@ -14,7 +14,7 @@ Outputs two artifacts from src/portal.template.html:
 
 Usage: python3 build.py
 """
-import os, re, pathlib
+import os, re, base64, pathlib
 
 ROOT = pathlib.Path(__file__).parent
 SRC = ROOT / "src" / "portal.template.html"
@@ -69,10 +69,16 @@ def build_pages():
 
 def build_artifact():
     head, body = split_source()
+    # Embed vendor libs as base64 so the artifact file is pure ASCII. SheetJS's
+    # codepage tables contain tens of thousands of real U+FFFD characters that the
+    # artifact publisher rejects; base64 sidesteps that while preserving exact bytes.
     blocks = []
     for n in ARTIFACT_LIBS:
-        js = read(VENDOR / n).replace("</script>", "<\\/script>")
-        blocks.append("<script>\n%s\n</script>" % js)
+        b64 = base64.b64encode((VENDOR / n).read_bytes()).decode("ascii")
+        blocks.append(
+            '<script>(0,eval)(new TextDecoder().decode('
+            'Uint8Array.from(atob("%s"),function(c){return c.charCodeAt(0);})))</script>' % b64
+        )
     body = body.replace("<!--__VENDOR__-->", "\n".join(blocks))
     out = head + "\n" + body + "\n"
     dist = ROOT / "dist"
