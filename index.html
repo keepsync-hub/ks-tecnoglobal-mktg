@@ -1,0 +1,1087 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Portal de autoatención de TecnoGlobal: transforma listas de precios en cotizaciones con marca (PPTX + PDF).">
+<title>Portal de Cotizaciones — TecnoGlobal</title>
+
+<style>
+  /* ===== Design tokens ===== */
+  :root{
+    --rojo:#E1251B;          /* TecnoGlobal red — accent, used sparingly */
+    --rojo-600:#C21D14;
+    --rojo-soft:#FCE9E7;
+    --gris-tecno:#58595B;    /* wordmark grey */
+    --ink:#211E1E;           /* warm near-black */
+    --ink-2:#5B5654;         /* secondary text, warm grey */
+    --surface:#FFFFFF;
+    --surface-2:#F7F5F5;     /* warm off-white */
+    --surface-3:#EFEBEB;
+    --border:#E4E0E0;
+    --border-strong:#D2CCCC;
+    --ok:#16794C;
+    --ok-soft:#E4F2EA;
+    --warn:#9A5B00;
+    --warn-soft:#FBEEDB;
+    --shadow:0 1px 2px rgba(33,30,30,.06),0 8px 24px rgba(33,30,30,.06);
+    --radius:12px;
+    --radius-sm:8px;
+    --maxw:1160px;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --rojo:#F1554B;
+      --rojo-600:#F1554B;
+      --rojo-soft:#3A211F;
+      --gris-tecno:#B9B5B4;
+      --ink:#F2EFEE;
+      --ink-2:#B4ADAB;
+      --surface:#1B1919;
+      --surface-2:#211E1E;
+      --surface-3:#2A2626;
+      --border:#3A3535;
+      --border-strong:#4A4444;
+      --ok:#57C08A;
+      --ok-soft:#173226;
+      --warn:#E0A54B;
+      --warn-soft:#33260F;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --rojo:#F1554B;
+    --rojo-600:#F1554B;
+    --rojo-soft:#3A211F;
+    --gris-tecno:#B9B5B4;
+    --ink:#F2EFEE;
+    --ink-2:#B4ADAB;
+    --surface:#1B1919;
+    --surface-2:#211E1E;
+    --surface-3:#2A2626;
+    --border:#3A3535;
+    --border-strong:#4A4444;
+    --ok:#57C08A;
+    --ok-soft:#173226;
+    --warn:#E0A54B;
+    --warn-soft:#33260F;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--sans);
+    background:var(--surface-2);
+    color:var(--ink);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.01em}
+  button{font-family:inherit}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* ===== Top bar ===== */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    background:var(--surface);
+    border-bottom:1px solid var(--border);
+    box-shadow:0 1px 0 rgba(225,37,27,.0);
+  }
+  .topbar::after{content:"";display:block;height:3px;background:var(--rojo)}
+  .topbar-in{
+    max-width:var(--maxw);margin:0 auto;padding:14px 24px;
+    display:flex;align-items:center;gap:18px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .brand svg{height:34px;width:auto;display:block}
+  .brand .sub{
+    font-size:12px;color:var(--ink-2);border-left:1px solid var(--border);
+    padding-left:12px;white-space:nowrap;letter-spacing:.02em;
+  }
+  .topbar-spacer{flex:1}
+  .icon-btn{
+    border:1px solid var(--border);background:var(--surface);color:var(--ink-2);
+    width:38px;height:38px;border-radius:var(--radius-sm);cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;font-size:16px;
+  }
+  .icon-btn:hover{border-color:var(--border-strong);color:var(--ink)}
+
+  /* ===== Stepper ===== */
+  .stepper{max-width:var(--maxw);margin:22px auto 0;padding:0 24px;display:flex;gap:10px}
+  .step{display:flex;align-items:center;gap:10px;color:var(--ink-2);font-size:13px;font-weight:600}
+  .step .dot{
+    width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+    border:1.5px solid var(--border-strong);font-size:12px;background:var(--surface);
+  }
+  .step.active{color:var(--ink)}
+  .step.active .dot{background:var(--rojo);border-color:var(--rojo);color:#fff}
+  .step.done .dot{background:var(--ok);border-color:var(--ok);color:#fff}
+  .step .bar{width:34px;height:1.5px;background:var(--border-strong)}
+
+  /* ===== Layout ===== */
+  main{max-width:var(--maxw);margin:0 auto;padding:26px 24px 80px}
+  .screen{display:none;animation:fade .25s ease}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.screen,.screen.active{animation:none}}
+
+  .card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);box-shadow:var(--shadow);
+  }
+  .eyebrow{
+    text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:700;color:var(--rojo);
+  }
+  .muted{color:var(--ink-2)}
+  .lead{font-size:15px;color:var(--ink-2);max-width:60ch}
+
+  /* ===== Buttons ===== */
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;justify-content:center;
+    border-radius:var(--radius-sm);border:1px solid transparent;
+    padding:11px 18px;font-size:14px;font-weight:650;cursor:pointer;
+    transition:background .15s,border-color .15s,transform .05s;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--rojo);color:#fff}
+  .btn-primary:hover{background:var(--rojo-600)}
+  .btn-ghost{background:var(--surface);border-color:var(--border-strong);color:var(--ink)}
+  .btn-ghost:hover{background:var(--surface-2)}
+  .btn-sm{padding:7px 12px;font-size:13px}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  :focus-visible{outline:2px solid var(--rojo);outline-offset:2px;border-radius:4px}
+
+  /* ===== Gate ===== */
+  .gate-wrap{max-width:420px;margin:8vh auto 0}
+  .gate-wrap .card{padding:30px}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+  .field label{font-size:12px;font-weight:650;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)}
+  .field input,.field select,.field textarea{
+    font-family:inherit;font-size:14px;color:var(--ink);background:var(--surface);
+    border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:10px 12px;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--rojo);box-shadow:0 0 0 3px var(--rojo-soft)}
+
+  /* ===== Dropzone ===== */
+  .dropzone{
+    border:2px dashed var(--border-strong);border-radius:var(--radius);
+    background:var(--surface);padding:46px 24px;text-align:center;cursor:pointer;
+    transition:border-color .15s,background .15s;
+  }
+  .dropzone:hover,.dropzone.drag{border-color:var(--rojo);background:var(--rojo-soft)}
+  .dropzone .big{width:56px;height:56px;border-radius:14px;background:var(--rojo-soft);color:var(--rojo);
+    display:grid;place-items:center;margin:0 auto 14px;font-size:26px}
+  .formats{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
+  .chip{
+    font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;
+    background:var(--surface-2);border:1px solid var(--border);color:var(--ink-2);
+  }
+  .chip.soft{border-style:dashed}
+  .or{display:flex;align-items:center;gap:14px;color:var(--ink-2);font-size:13px;margin:20px 0}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--border)}
+
+  /* ===== Review layout ===== */
+  .review-grid{display:grid;grid-template-columns:320px 1fr;gap:22px;align-items:start}
+  @media(max-width:900px){.review-grid{grid-template-columns:1fr}}
+  .panel{padding:20px}
+  .panel h3{font-size:14px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .totals{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+  .totals .row{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-2);padding:4px 0}
+  .totals .grand{border-top:1px dashed var(--border-strong);margin-top:6px;padding-top:10px;
+    font-size:19px;font-weight:750;color:var(--ink)}
+
+  .grid-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+  .grid-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+  table.price{border-collapse:collapse;width:100%;min-width:640px;font-size:13.5px}
+  table.price th{
+    background:var(--rojo);color:#fff;font-weight:650;text-align:left;
+    padding:10px 12px;position:sticky;top:0;white-space:nowrap;
+  }
+  table.price th.n,table.price td.n{text-align:right}
+  table.price td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle}
+  table.price tbody tr:nth-child(even){background:var(--surface-2)}
+  table.price td .cell{padding:9px 12px;min-height:20px;outline:none}
+  table.price td .cell[contenteditable]:focus{background:var(--rojo-soft);box-shadow:inset 0 0 0 2px var(--rojo)}
+  table.price td.total{color:var(--ink-2);font-variant-numeric:tabular-nums;padding:9px 12px}
+  .rowdel{border:none;background:transparent;color:var(--ink-2);cursor:pointer;font-size:15px;padding:6px 10px;border-radius:6px}
+  .rowdel:hover{background:var(--rojo-soft);color:var(--rojo)}
+  .colhint{font-size:11px;font-weight:500;opacity:.85;display:block;margin-top:1px}
+
+  /* ===== Banner ===== */
+  .banner{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:16px}
+  .banner.warn{background:var(--warn-soft);color:var(--warn)}
+  .banner.ok{background:var(--ok-soft);color:var(--ok)}
+  .banner .x{margin-left:auto;cursor:pointer;opacity:.7}
+
+  /* ===== Done ===== */
+  .done-wrap{max-width:560px;margin:2vh auto 0;text-align:center}
+  .done-wrap .seal{width:66px;height:66px;border-radius:50%;background:var(--ok-soft);color:var(--ok);
+    display:grid;place-items:center;font-size:30px;margin:0 auto 18px}
+  .dl-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+  .dl-card{
+    flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:20px;text-align:left;box-shadow:var(--shadow);
+  }
+  .dl-card .kind{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--rojo)}
+  .dl-card h4{margin:6px 0 2px;font-size:16px}
+  .dl-card p{margin:0 0 14px;font-size:12.5px;color:var(--ink-2)}
+
+  .spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;
+    display:inline-block;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .footnote{max-width:var(--maxw);margin:0 auto;padding:0 24px 40px;color:var(--ink-2);font-size:12px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand" id="brandLogo"></div>
+    <span class="sub">Portal de cotizaciones</span>
+    <div class="topbar-spacer"></div>
+    <span class="muted" id="whoami" style="font-size:13px"></span>
+    <button class="icon-btn" id="themeBtn" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
+  </div>
+</div>
+
+<div class="stepper" id="stepper" hidden>
+  <div class="step" data-step="upload"><span class="dot">1</span>Subir archivo</div>
+  <span class="bar"></span>
+  <div class="step" data-step="review"><span class="dot">2</span>Revisar y editar</div>
+  <span class="bar"></span>
+  <div class="step" data-step="done"><span class="dot">3</span>Descargar</div>
+</div>
+
+<main>
+  <!-- ===== GATE ===== -->
+  <section class="screen active" id="screen-gate">
+    <div class="gate-wrap">
+      <div class="card">
+        <p class="eyebrow">Acceso vendedores</p>
+        <h1 style="font-size:22px;margin:6px 0 6px">Identifícate para comenzar</h1>
+        <p class="lead" style="margin-bottom:22px">Tu nombre quedará registrado como responsable en la cotización generada.</p>
+        <div class="field">
+          <label for="g-name">Nombre del vendedor</label>
+          <input id="g-name" type="text" placeholder="Ej: María Fernández" autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="g-pin">Código de acceso <span class="muted" style="text-transform:none;letter-spacing:0">(opcional)</span></label>
+          <input id="g-pin" type="password" placeholder="Código interno de ventas">
+        </div>
+        <button class="btn btn-primary" id="g-enter" style="width:100%">Ingresar</button>
+      </div>
+      <p class="footnote" style="text-align:center;padding:14px 0 0">
+        Este portal procesa los archivos en tu navegador; los precios no se envían a ningún servidor.
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== UPLOAD ===== -->
+  <section class="screen" id="screen-upload">
+    <p class="eyebrow">Paso 1</p>
+    <h1 style="font-size:24px;margin:6px 0 8px">Sube la lista de precios</h1>
+    <p class="lead" style="margin-bottom:22px">Arrastra un archivo con una tabla de productos y precios. Lo transformaremos al formato estándar de TecnoGlobal.</p>
+
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Subir archivo">
+      <div class="big">↑</div>
+      <div style="font-weight:650;font-size:16px">Arrastra tu archivo aquí o haz clic para elegir</div>
+      <div class="muted" style="font-size:13px;margin-top:4px">Tamaño máximo 25 MB</div>
+      <div class="formats">
+        <span class="chip">Excel .xlsx / .csv</span>
+        <span class="chip">Word .docx</span>
+        <span class="chip">PowerPoint .pptx</span>
+        <span class="chip soft">PDF (beta)</span>
+      </div>
+      <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,.docx,.pptx,.pdf" hidden>
+    </div>
+
+    <div class="or">o</div>
+    <div style="text-align:center">
+      <button class="btn btn-ghost" id="blankBtn">Comenzar con una tabla en blanco</button>
+      <button class="btn btn-ghost" id="demoBtn" style="margin-left:8px">Cargar ejemplo</button>
+    </div>
+  </section>
+
+  <!-- ===== REVIEW ===== -->
+  <section class="screen" id="screen-review">
+    <div id="reviewBanner"></div>
+    <div class="review-grid">
+      <div class="card panel" id="metaPanel">
+        <p class="eyebrow" style="margin-bottom:2px">Paso 2</p>
+        <h3 style="margin-top:2px">Datos de la cotización</h3>
+        <div class="field"><label for="m-title">Título</label><input id="m-title" type="text" value="Cotización TecnoGlobal"></div>
+        <div class="field"><label for="m-client">Cliente</label><input id="m-client" type="text" placeholder="Nombre del cliente"></div>
+        <div class="field"><label for="m-seller">Vendedor</label><input id="m-seller" type="text"></div>
+        <div class="field"><label for="m-date">Fecha</label><input id="m-date" type="date"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field"><label for="m-currency">Moneda</label>
+            <select id="m-currency"><option value="CLP">CLP $</option><option value="USD">USD US$</option><option value="UF">UF</option></select>
+          </div>
+          <div class="field"><label for="m-validity">Validez (días)</label><input id="m-validity" type="number" min="0" value="15"></div>
+        </div>
+        <div class="field" style="flex-direction:row;align-items:center;gap:8px">
+          <input id="m-showtotals" type="checkbox" checked style="width:16px;height:16px">
+          <label for="m-showtotals" style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink)">Mostrar total general</label>
+        </div>
+        <div class="field"><label for="m-notes">Notas</label><textarea id="m-notes" rows="3" placeholder="Condiciones, despacho, etc."></textarea></div>
+
+        <div class="totals">
+          <div class="row"><span>Ítems</span><span class="num" id="t-count">0</span></div>
+          <div class="row"><span>Subtotal</span><span class="num" id="t-sub">—</span></div>
+          <div class="row grand"><span>Total</span><span class="num" id="t-grand">—</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="grid-head">
+          <div>
+            <h2 style="font-size:18px">Tabla de precios</h2>
+            <p class="muted" style="font-size:13px;margin:2px 0 0">Edita las celdas directamente. El total se calcula solo.</p>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" id="addRow">＋ Agregar fila</button>
+            <button class="btn btn-primary btn-sm" id="genBtn">Generar cotización →</button>
+          </div>
+        </div>
+        <div class="grid-scroll">
+          <table class="price">
+            <thead><tr>
+              <th style="width:120px">SKU / Código</th>
+              <th>Descripción</th>
+              <th class="n" style="width:90px">Cantidad</th>
+              <th class="n" style="width:130px">Precio unit.</th>
+              <th class="n" style="width:140px">Total</th>
+              <th style="width:44px"></th>
+            </tr></thead>
+            <tbody id="priceBody"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:14px">
+          <button class="btn btn-ghost btn-sm" id="backUpload">← Cambiar archivo</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DONE ===== -->
+  <section class="screen" id="screen-done">
+    <div class="done-wrap">
+      <div class="seal">✓</div>
+      <p class="eyebrow">Paso 3</p>
+      <h1 style="font-size:24px;margin:6px 0 8px">Cotización lista</h1>
+      <p class="lead" style="margin:0 auto">Descarga el PowerPoint para editarlo o el PDF para enviarlo directamente al cliente.</p>
+      <div class="dl-row">
+        <div class="dl-card">
+          <span class="kind">Editable</span>
+          <h4>PowerPoint (.pptx)</h4>
+          <p>Ábrelo en PowerPoint o Google Slides para ajustar textos.</p>
+          <button class="btn btn-primary" id="dlPptx" style="width:100%">Descargar PPTX</button>
+        </div>
+        <div class="dl-card">
+          <span class="kind">Para enviar</span>
+          <h4>Documento PDF</h4>
+          <p>Listo para adjuntar en un correo al cliente.</p>
+          <button class="btn btn-ghost" id="dlPdf" style="width:100%">Descargar PDF</button>
+        </div>
+      </div>
+      <div style="margin-top:26px"><button class="btn btn-ghost" id="newQuote">Nueva cotización</button></div>
+    </div>
+  </section>
+</main>
+
+<p class="footnote" id="globalFoot"></p>
+
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/fflate.min.js"></script>
+<script src="vendor/pptxgen.bundle.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/jspdf.plugin.autotable.min.js"></script>
+<script src="vendor/pdf.min.js"></script>
+<script>window.__PDF_WORKER__="vendor/pdf.worker.min.js";</script>
+
+<script>
+"use strict";
+(function(){
+  /* ============================================================
+     TecnoGlobal — Portal de cotizaciones (cliente, sin servidor)
+     ============================================================ */
+
+  /* ---- Brand ---- */
+  var BRAND = { rojo:"E1251B", rojoHex:"#E1251B", gris:"58595B", inkPdf:[33,30,30], grisPdf:[88,89,91], lightPdf:[247,245,245] };
+
+  var LOGO_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 150" role="img" aria-label="TecnoGlobal">'+
+    '<g fill="none" stroke="#E1251B" stroke-width="2.4">'+
+      '<circle cx="300" cy="70" r="66" opacity="0.10"/>'+
+      '<circle cx="300" cy="70" r="55" opacity="0.16"/>'+
+      '<circle cx="300" cy="70" r="44" opacity="0.24"/>'+
+      '<circle cx="300" cy="70" r="34" opacity="0.36"/>'+
+      '<circle cx="300" cy="70" r="24" opacity="0.55"/>'+
+      '<circle cx="300" cy="70" r="15" opacity="0.8"/>'+
+      '<circle cx="300" cy="70" r="7" opacity="1"/>'+
+    '</g>'+
+    '<text x="16" y="98" font-family="Arial,Helvetica,sans-serif" font-size="76" font-weight="800" letter-spacing="-3" fill="#58595B">TECNO</text>'+
+    '<text x="300" y="98" font-family="Arial,Helvetica,sans-serif" font-size="76" font-weight="800" letter-spacing="-3" fill="#E1251B">GLOBAL</text>'+
+    '</svg>';
+
+  var LOGO_PNG = null;   // rasterized data URI for PPTX/PDF, filled on load
+  var LOGO_W = 560, LOGO_H = 150;   // natural size of whatever logo loaded (aspect ratio)
+
+  // Try the official asset (assets/logo_tecnoglobal.png|svg) committed to the repo;
+  // fall back to the inline SVG recreation. Sets header + rasterized LOGO_PNG.
+  function loadLogo(){
+    return new Promise(function(res){
+      function raster(img,w,h,headerNode){
+        var scale=3;
+        var c=document.createElement("canvas"); c.width=Math.round(w*scale); c.height=Math.round(h*scale);
+        var ctx=c.getContext("2d"); ctx.clearRect(0,0,c.width,c.height); ctx.drawImage(img,0,0,c.width,c.height);
+        try{ LOGO_PNG=c.toDataURL("image/png"); LOGO_W=w; LOGO_H=h; }catch(e){}
+        $("#brandLogo").innerHTML=""; $("#brandLogo").appendChild(headerNode);
+        res();
+      }
+      function useInline(){
+        var svg=new Blob([LOGO_SVG],{type:"image/svg+xml"}), url=URL.createObjectURL(svg);
+        var img=new Image();
+        img.onload=function(){ var node=document.createElement("span"); node.innerHTML=LOGO_SVG; raster(img,560,150,node.firstChild); URL.revokeObjectURL(url); };
+        img.onerror=function(){ $("#brandLogo").innerHTML=LOGO_SVG; URL.revokeObjectURL(url); res(); };
+        img.src=url;
+      }
+      function tryOfficial(src,next){
+        var img=new Image();
+        img.onload=function(){
+          var w=img.naturalWidth||560, h=img.naturalHeight||150;
+          var el=document.createElement("img"); el.src=src; el.alt="TecnoGlobal"; el.style.height="34px"; el.style.width="auto";
+          raster(img,w,h,el);
+        };
+        img.onerror=next;
+        img.src=src;
+      }
+      tryOfficial("assets/logo_tecnoglobal.png", function(){ tryOfficial("assets/logo_tecnoglobal.svg", useInline); });
+    });
+  }
+
+  /* ---- State ---- */
+  var state = {
+    salesperson:"",
+    rows:[],            // [{sku,description,quantity,unit_price}]
+    meta:{}
+  };
+
+  var $ = function(s,r){ return (r||document).querySelector(s); };
+  var $$ = function(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+
+  /* ---- Money helpers ---- */
+  function coerceNumber(v){
+    if(v==null) return null;
+    if(typeof v==="number") return isFinite(v)?v:null;
+    var s=String(v).trim();
+    if(!s) return null;
+    s=s.replace(/[^0-9.,-]/g,"");
+    if(!s || s==="-" ) return null;
+    var hasDot=s.indexOf(".")>=0, hasComma=s.indexOf(",")>=0;
+    if(hasDot && hasComma){
+      // last separator is decimal
+      if(s.lastIndexOf(",")>s.lastIndexOf(".")){ s=s.replace(/\./g,"").replace(",", "."); }
+      else { s=s.replace(/,/g,""); }
+    } else if(hasComma){
+      // comma decimal if it looks like one (<=2 trailing digits), else thousands
+      var parts=s.split(",");
+      if(parts.length===2 && parts[1].length<=2){ s=s.replace(",", "."); }
+      else { s=s.replace(/,/g,""); }
+    } else if(hasDot){
+      var dp=s.split(".");
+      if(dp.length>2){ s=s.replace(/\./g,""); }                // 1.234.567
+      else if(dp[1] && dp[1].length===3){ s=s.replace(/\./g,""); } // 1.234 -> thousands
+    }
+    var n=parseFloat(s);
+    return isFinite(n)?n:null;
+  }
+  function fmtMoney(n,cur){
+    if(n==null||!isFinite(n)) return "—";
+    cur=cur||"CLP";
+    if(cur==="USD") return "US$ "+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(cur==="UF")  return n.toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2})+" UF";
+    return "$ "+Math.round(n).toLocaleString("es-CL");
+  }
+
+  /* ---- Header synonym mapping ---- */
+  var SYN = {
+    sku:["sku","codigo","código","cod","code","part number","p/n","pn","referencia","ref","modelo","item code"],
+    description:["descripcion","descripción","producto","detalle","item","ítem","articulo","artículo","nombre","glosa","concepto"],
+    quantity:["cantidad","cant","qty","q","unidades","und","uds"],
+    unit_price:["precio unitario","precio unit","precio","p unit","p. unit","valor unitario","valor","costo","unit price","price","precio neto","neto"],
+    total:["total","subtotal","monto","importe","valor total","total neto","total item"]
+  };
+  function norm(s){ return String(s||"").toLowerCase().replace(/\s+/g," ").trim().replace(/[.:]/g,""); }
+  function classifyHeader(h){
+    var n=norm(h);
+    for(var field in SYN){
+      var arr=SYN[field];
+      for(var i=0;i<arr.length;i++){ if(n===arr[i]||n.indexOf(arr[i])>=0) return field; }
+    }
+    return null;
+  }
+
+  /* ---- Normalize a raw matrix -> rows ---- */
+  function normalizeMatrix(matrix){
+    // drop fully-empty rows
+    var rows=matrix.filter(function(r){ return r.some(function(c){ return String(c==null?"":c).trim()!==""; }); });
+    if(!rows.length) return {rows:[],warnings:["No se encontraron datos en el archivo."]};
+    // find header row = the row where most cells classify
+    var headerIdx=0, best=-1;
+    for(var i=0;i<Math.min(rows.length,8);i++){
+      var score=rows[i].reduce(function(a,c){ return a+(classifyHeader(c)?1:0); },0);
+      if(score>best){ best=score; headerIdx=i; }
+    }
+    var header=rows[headerIdx];
+    var map=header.map(classifyHeader);
+    var warnings=[];
+    var haveDesc=map.indexOf("description")>=0, havePrice=map.indexOf("unit_price")>=0;
+    // fallback: if no headers detected, assume columns by position
+    if(best<=0){
+      warnings.push("No se reconocieron encabezados; revisa la asignación de columnas.");
+      headerIdx=-1;
+      map = header.map(function(_,i){ return ["sku","description","quantity","unit_price","total"][i]||null; });
+      // in this case header row is actually data
+    }
+    var out=[];
+    for(var r=(headerIdx<0?0:headerIdx+1); r<rows.length; r++){
+      var row=rows[r], obj={sku:"",description:"",quantity:null,unit_price:null,total:null};
+      for(var c=0;c<row.length;c++){
+        var f=map[c]; if(!f) continue;
+        var val=row[c];
+        if(f==="quantity") obj.quantity=coerceNumber(val);
+        else if(f==="unit_price") obj.unit_price=coerceNumber(val);
+        else if(f==="total") obj.total=coerceNumber(val);
+        else obj[f]=String(val==null?"":val).trim();
+      }
+      // derive unit price from total/qty if missing
+      if(obj.unit_price==null && obj.total!=null){
+        var q=obj.quantity||1; if(q) obj.unit_price=obj.total/q;
+      }
+      if(obj.quantity==null && (obj.description||obj.unit_price!=null)) obj.quantity=1;
+      if(obj.description || obj.unit_price!=null || obj.sku) out.push(obj);
+    }
+    if(!haveDesc) warnings.push("No se detectó una columna de descripción con claridad.");
+    if(!havePrice) warnings.push("No se detectó una columna de precio con claridad.");
+    if(!out.length) warnings.push("No se pudieron extraer filas; puedes ingresarlas manualmente.");
+    return {rows:out, warnings:warnings};
+  }
+
+  /* ============ Parsers per format ============ */
+  function parseXlsxOrCsv(data, isText){
+    var wb = XLSX.read(data, {type: isText?"string":"array"});
+    var best=null, bestCount=-1;
+    wb.SheetNames.forEach(function(name){
+      var ws=wb.Sheets[name];
+      var m=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:""});
+      var cells=m.reduce(function(a,r){ return a+r.filter(function(c){return String(c).trim()!=="";}).length; },0);
+      if(cells>bestCount){ bestCount=cells; best=m; }
+    });
+    return best||[];
+  }
+  function xmlDoc(str){ return new DOMParser().parseFromString(str,"application/xml"); }
+  function decodeUTF8(u8){
+    try{ return new TextDecoder("utf-8").decode(u8); }
+    catch(e){ var s=""; for(var i=0;i<u8.length;i++) s+=String.fromCharCode(u8[i]); return s; }
+  }
+  function localTags(doc,name){
+    // match tag ignoring namespace prefix
+    var all=doc.getElementsByTagName("*"), out=[];
+    for(var i=0;i<all.length;i++){ if(all[i].localName===name) out.push(all[i]); }
+    return out;
+  }
+  function textOfCell(cell, tTag){
+    var ts=[], all=cell.getElementsByTagName("*");
+    for(var i=0;i<all.length;i++){ if(all[i].localName===tTag) ts.push(all[i].textContent); }
+    return ts.join("").replace(/\s+/g," ").trim();
+  }
+  function biggestTable(tables){ // tables: array of matrices
+    var best=[],bc=-1;
+    tables.forEach(function(m){ var c=m.reduce(function(a,r){return a+r.length;},0); if(c>bc){bc=c;best=m;} });
+    return best;
+  }
+  function parseDocx(u8){
+    var files=fflate.unzipSync(u8);
+    var xml=files["word/document.xml"]; if(!xml) return [];
+    var doc=xmlDoc(decodeUTF8(xml));
+    var tbls=localTags(doc,"tbl"), matrices=[];
+    tbls.forEach(function(tbl){
+      var m=[]; var trs=Array.prototype.filter.call(tbl.getElementsByTagName("*"),function(e){return e.localName==="tr" && isDirectRowOf(e,tbl);});
+      // simpler: all tr descendants
+      trs=[]; var allTr=tbl.getElementsByTagName("*"); for(var i=0;i<allTr.length;i++){ if(allTr[i].localName==="tr") trs.push(allTr[i]); }
+      trs.forEach(function(tr){
+        var cells=[]; var kids=tr.getElementsByTagName("*");
+        for(var j=0;j<kids.length;j++){ if(kids[j].localName==="tc") cells.push(kids[j]); }
+        m.push(cells.map(function(c){ return textOfCell(c,"t"); }));
+      });
+      if(m.length) matrices.push(m);
+    });
+    return biggestTable(matrices);
+  }
+  function isDirectRowOf(){ return true; }
+  function parsePptx(u8){
+    var files=fflate.unzipSync(u8), matrices=[];
+    Object.keys(files).forEach(function(k){
+      if(/^ppt\/slides\/slide\d+\.xml$/.test(k)){
+        var doc=xmlDoc(decodeUTF8(files[k]));
+        var tbls=localTags(doc,"tbl");
+        tbls.forEach(function(tbl){
+          var m=[]; var kids=tbl.getElementsByTagName("*"), trs=[];
+          for(var i=0;i<kids.length;i++){ if(kids[i].localName==="tr") trs.push(kids[i]); }
+          trs.forEach(function(tr){
+            var cells=[], ck=tr.getElementsByTagName("*");
+            for(var j=0;j<ck.length;j++){ if(ck[j].localName==="tc") cells.push(ck[j]); }
+            m.push(cells.map(function(c){ return textOfCell(c,"t"); }));
+          });
+          if(m.length) matrices.push(m);
+        });
+      }
+    });
+    return biggestTable(matrices);
+  }
+
+  /* ---- PDF (best-effort, beta) via pdf.js ---- */
+  function pageToMatrix(items){
+    var toks=items.filter(function(it){ return it.str && it.str.trim(); })
+                  .map(function(it){ return {x:it.transform[4], y:Math.round(it.transform[5]), s:it.str.trim()}; });
+    if(!toks.length) return [];
+    toks.sort(function(a,b){ return b.y-a.y || a.x-b.x; });
+    // group into lines by y proximity
+    var lines=[], cur=[], lastY=null, tol=4;
+    toks.forEach(function(t){
+      if(lastY==null || Math.abs(t.y-lastY)<=tol){ cur.push(t); lastY=(lastY==null?t.y:lastY); }
+      else { lines.push(cur); cur=[t]; lastY=t.y; }
+    });
+    if(cur.length) lines.push(cur);
+    // cluster x positions into columns
+    var xs=toks.map(function(t){ return t.x; }).sort(function(a,b){ return a-b; });
+    var clusters=[[xs[0]]], gap=28;
+    for(var i=1;i<xs.length;i++){ if(xs[i]-xs[i-1]>gap) clusters.push([]); clusters[clusters.length-1].push(xs[i]); }
+    var centers=clusters.map(function(c){ return c.reduce(function(a,b){return a+b;},0)/c.length; });
+    return lines.map(function(line){
+      var row=[]; for(var k=0;k<centers.length;k++) row.push("");
+      line.sort(function(a,b){ return a.x-b.x; });
+      line.forEach(function(t){
+        var best=0,bd=1e9; for(var c=0;c<centers.length;c++){ var d=Math.abs(t.x-centers[c]); if(d<bd){ bd=d; best=c; } }
+        row[best]=(row[best]?row[best]+" ":"")+t.s;
+      });
+      return row;
+    });
+  }
+  function parsePdf(u8){
+    return pdfjsLib.getDocument({data:u8}).promise.then(function(pdf){
+      var matrix=[], seq=Promise.resolve();
+      var run=function(pn){ return pdf.getPage(pn).then(function(page){ return page.getTextContent().then(function(tc){ matrix=matrix.concat(pageToMatrix(tc.items)); }); }); };
+      for(var p=1;p<=pdf.numPages;p++){ (function(pn){ seq=seq.then(function(){ return run(pn); }); })(p); }
+      return seq.then(function(){ return matrix; });
+    });
+  }
+
+  /* ============ File intake ============ */
+  function finishMatrix(matrix){
+    var res=normalizeMatrix(matrix);
+    if(!res.rows.length && (!matrix || !matrix.length)) res.warnings=["No se pudo leer una tabla en el archivo. Ingresa los datos manualmente."];
+    gotoReview(res);
+  }
+  function handleFile(file){
+    if(!file) return;
+    if(file.size > 25*1024*1024){ toast("El archivo supera los 25 MB.","warn",true); return; }
+    var name=file.name.toLowerCase();
+    var reader=new FileReader();
+    reader.onload=function(){
+      try{
+        if(/\.(xlsx|xls)$/.test(name)){ finishMatrix(parseXlsxOrCsv(new Uint8Array(reader.result),false)); }
+        else if(/\.csv$/.test(name)){ finishMatrix(parseXlsxOrCsv(decodeUTF8(new Uint8Array(reader.result)),true)); }
+        else if(/\.docx$/.test(name)){ finishMatrix(parseDocx(new Uint8Array(reader.result))); }
+        else if(/\.pptx$/.test(name)){ finishMatrix(parsePptx(new Uint8Array(reader.result))); }
+        else if(/\.pdf$/.test(name)){
+          if(window.pdfjsLib){
+            gotoReviewLoading();
+            parsePdf(new Uint8Array(reader.result)).then(function(matrix){
+              var res=normalizeMatrix(matrix);
+              res.warnings=(res.warnings||[]);
+              res.warnings.unshift("Extracción desde PDF en beta: revisa con cuidado filas y columnas, suelen requerir ajustes.");
+              gotoReview(res);
+            }).catch(function(e){
+              console.error(e);
+              gotoReview({rows:[], warnings:["No se pudo extraer la tabla del PDF automáticamente. Ingresa los datos manualmente o sube el archivo en Excel."]});
+            });
+          } else {
+            gotoReview({rows:[], warnings:["La extracción automática desde PDF no está disponible en esta versión. Ingresa la tabla manualmente o sube el archivo en Excel / Word / PowerPoint."]});
+          }
+        } else { toast("Formato no soportado.","warn",true); }
+      }catch(err){
+        console.error(err);
+        gotoReview({rows:[], warnings:["Ocurrió un problema al leer el archivo ("+(err.message||err)+"). Puedes ingresar la tabla manualmente."]});
+      }
+    };
+    reader.onerror=function(){ toast("No se pudo leer el archivo.","warn",true); };
+    reader.readAsArrayBuffer(file);
+  }
+  function gotoReviewLoading(){
+    var b=$("#reviewBanner"); show("review");
+    b.innerHTML='<div class="banner ok"><span class="spinner" style="border-color:rgba(22,121,76,.35);border-top-color:var(--ok)"></span><div>Procesando PDF…</div></div>';
+    $("#priceBody").innerHTML=""; $("#t-count").textContent="0"; $("#t-sub").textContent="—"; $("#t-grand").textContent="—";
+  }
+
+  /* ============ Screens ============ */
+  function show(id){
+    $$(".screen").forEach(function(s){ s.classList.remove("active"); });
+    $("#screen-"+id).classList.add("active");
+    var stepper=$("#stepper");
+    if(id==="gate"){ stepper.hidden=true; }
+    else{ stepper.hidden=false; setStep(id); }
+    window.scrollTo({top:0,behavior:"auto"});
+  }
+  function setStep(id){
+    var order=["upload","review","done"], idx=order.indexOf(id);
+    $$("#stepper .step").forEach(function(el){
+      var s=el.getAttribute("data-step"), i=order.indexOf(s);
+      el.classList.remove("active","done");
+      if(i<idx) el.classList.add("done"); else if(i===idx) el.classList.add("active");
+    });
+  }
+
+  function gotoReview(res){
+    state.rows = res.rows && res.rows.length ? res.rows : [blankRow(),blankRow(),blankRow()];
+    // banner
+    var b=$("#reviewBanner"); b.innerHTML="";
+    if(res.warnings && res.warnings.length){
+      var div=document.createElement("div"); div.className="banner warn";
+      div.innerHTML='<span>⚠</span><div>'+res.warnings.map(esc).join("<br>")+'</div><span class="x">✕</span>';
+      div.querySelector(".x").onclick=function(){ div.remove(); };
+      b.appendChild(div);
+    } else {
+      var d2=document.createElement("div"); d2.className="banner ok";
+      d2.innerHTML='<span>✓</span><div>Se extrajeron '+state.rows.length+' ítems. Revisa y ajusta antes de generar.</div><span class="x">✕</span>';
+      d2.querySelector(".x").onclick=function(){ d2.remove(); };
+      b.appendChild(d2);
+    }
+    $("#m-seller").value = state.salesperson || "";
+    if(!$("#m-date").value) $("#m-date").value = todayISO();
+    renderGrid(); recalc(); show("review");
+  }
+  function blankRow(){ return {sku:"",description:"",quantity:1,unit_price:null,total:null}; }
+  function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+  function pad(n){ return (n<10?"0":"")+n; }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
+
+  /* ============ Editable grid ============ */
+  function renderGrid(){
+    var body=$("#priceBody"); body.innerHTML="";
+    state.rows.forEach(function(row,i){
+      var tr=document.createElement("tr"); tr.setAttribute("data-i",i);
+      tr.innerHTML=
+        '<td><div class="cell" contenteditable data-f="sku">'+esc(row.sku||"")+'</div></td>'+
+        '<td><div class="cell" contenteditable data-f="description">'+esc(row.description||"")+'</div></td>'+
+        '<td class="n"><div class="cell num" contenteditable data-f="quantity" style="text-align:right">'+(row.quantity!=null?esc(row.quantity):"")+'</div></td>'+
+        '<td class="n"><div class="cell num" contenteditable data-f="unit_price" style="text-align:right">'+(row.unit_price!=null?esc(row.unit_price):"")+'</div></td>'+
+        '<td class="total n" data-total>'+fmtMoney(rowTotal(row),curr())+'</td>'+
+        '<td><button class="rowdel" title="Eliminar fila" aria-label="Eliminar fila">✕</button></td>';
+      body.appendChild(tr);
+    });
+  }
+  function rowTotal(row){
+    if(row.unit_price==null) return row.total!=null?row.total:null;
+    var q=row.quantity==null?1:row.quantity; return row.unit_price*q;
+  }
+  function curr(){ return $("#m-currency").value; }
+
+  function onGridInput(e){
+    var cell=e.target.closest(".cell[contenteditable]"); if(!cell) return;
+    var tr=cell.closest("tr"), i=+tr.getAttribute("data-i"), f=cell.getAttribute("data-f");
+    var row=state.rows[i]; if(!row) return;
+    var txt=cell.textContent;
+    if(f==="quantity") row.quantity=coerceNumber(txt);
+    else if(f==="unit_price") row.unit_price=coerceNumber(txt);
+    else row[f]=txt.trim();
+    tr.querySelector("[data-total]").textContent=fmtMoney(rowTotal(row),curr());
+    recalc();
+  }
+  function onGridClick(e){
+    var del=e.target.closest(".rowdel"); if(!del) return;
+    var tr=del.closest("tr"), i=+tr.getAttribute("data-i");
+    state.rows.splice(i,1); if(!state.rows.length) state.rows.push(blankRow());
+    renderGrid(); recalc();
+  }
+  function recalc(){
+    var sub=0, any=false;
+    state.rows.forEach(function(r){ var t=rowTotal(r); if(t!=null){ sub+=t; any=true; } });
+    $("#t-count").textContent=state.rows.filter(function(r){return r.description||r.unit_price!=null;}).length;
+    $("#t-sub").textContent=any?fmtMoney(sub,curr()):"—";
+    $("#t-grand").textContent=any?fmtMoney(sub,curr()):"—";
+    // refresh visible totals currency
+    $$("#priceBody tr").forEach(function(tr){ var i=+tr.getAttribute("data-i"); tr.querySelector("[data-total]").textContent=fmtMoney(rowTotal(state.rows[i]),curr()); });
+  }
+
+  function collectMeta(){
+    return {
+      title:$("#m-title").value||"Cotización TecnoGlobal",
+      client:$("#m-client").value||"",
+      seller:$("#m-seller").value||state.salesperson||"",
+      date:$("#m-date").value||todayISO(),
+      currency:curr(),
+      validity:$("#m-validity").value||"",
+      showTotals:$("#m-showtotals").checked,
+      notes:$("#m-notes").value||""
+    };
+  }
+  function cleanRows(){
+    return state.rows.filter(function(r){ return (r.description&&r.description.trim())||r.unit_price!=null||r.sku; });
+  }
+  function grandTotal(rows){ return rows.reduce(function(a,r){ var t=rowTotal(r); return a+(t||0); },0); }
+  function fmtDate(iso){
+    if(!iso) return "";
+    var p=iso.split("-"); if(p.length!==3) return iso;
+    return p[2]+"-"+p[1]+"-"+p[0];
+  }
+
+  /* ============ PPTX generation ============ */
+  function buildPptx(meta,rows){
+    var pptx=new PptxGenJS();
+    pptx.defineLayout({name:"TG",width:13.333,height:7.5});
+    pptx.layout="TG";
+    pptx.author="TecnoGlobal"; pptx.company="TecnoGlobal";
+
+    // Master with footer + logo
+    var masterObjs=[
+      {rect:{x:0,y:7.24,w:13.333,h:0.26,fill:{color:BRAND.rojo}}},
+      {text:{text:"TecnoGlobal · www.tecnoglobal.cl"+(meta.validity?("  ·  Cotización válida por "+meta.validity+" días"):""),
+             options:{x:0.5,y:6.86,w:9,h:0.3,fontFace:"Arial",fontSize:8,color:"9A9A9A",align:"left"}}}
+    ];
+    var lw=1.7, lh=lw*LOGO_H/LOGO_W;
+    if(LOGO_PNG) masterObjs.push({image:{data:LOGO_PNG,x:12.83-lw,y:7.19-lh,w:lw,h:lh}});
+    pptx.defineSlideMaster({title:"TG_BODY",background:{color:"FFFFFF"},objects:masterObjs,
+      slideNumber:{x:0.5,y:6.55,w:2,h:0.3,fontFace:"Arial",fontSize:8,color:"9A9A9A"}});
+
+    /* Cover */
+    var cover=pptx.addSlide();
+    cover.background={color:"FFFFFF"};
+    cover.addShape(pptx.ShapeType.rect,{x:0,y:0,w:13.333,h:0.5,fill:{color:BRAND.rojo}});
+    var cw=3.6, ch=cw*LOGO_H/LOGO_W;
+    if(LOGO_PNG) cover.addImage({data:LOGO_PNG,x:0.7,y:1.0,w:cw,h:ch});
+    cover.addText(meta.title,{x:0.7,y:2.5,w:12,h:1.0,fontFace:"Arial",fontSize:34,bold:true,color:"211E1E"});
+    var info=[];
+    if(meta.client) info.push([{text:"Cliente:  ",options:{bold:true}},{text:meta.client}]);
+    info.push([{text:"Fecha:  ",options:{bold:true}},{text:fmtDate(meta.date)}]);
+    if(meta.seller) info.push([{text:"Vendedor:  ",options:{bold:true}},{text:meta.seller}]);
+    info.push([{text:"Moneda:  ",options:{bold:true}},{text:meta.currency}]);
+    if(meta.validity) info.push([{text:"Validez:  ",options:{bold:true}},{text:meta.validity+" días"}]);
+    var infoRuns=[]; info.forEach(function(line,idx){ line.forEach(function(r){ infoRuns.push({text:r.text,options:Object.assign({fontFace:"Arial",fontSize:15,color:"5B5654"},r.options||{})}); }); if(idx<info.length-1) infoRuns.push({text:"\n",options:{fontSize:15}}); });
+    cover.addText(infoRuns,{x:0.72,y:3.7,w:8,h:2,lineSpacingMultiple:1.3,valign:"top"});
+    if(meta.notes) cover.addText(meta.notes,{x:0.72,y:5.7,w:11.9,h:1,fontFace:"Arial",fontSize:11,italic:true,color:"7A7573",valign:"top"});
+    cover.addShape(pptx.ShapeType.rect,{x:0,y:7.24,w:13.333,h:0.26,fill:{color:BRAND.rojo}});
+
+    /* Table — manual pagination (autoPage is unreliable in this build) */
+    var head=["SKU / Código","Descripción","Cant.","Precio unit.","Total"];
+    function headerRow(){ return head.map(function(h,i){ return {text:h,options:{fill:{color:BRAND.rojo},color:"FFFFFF",bold:true,align:(i>=2?"right":"left"),fontFace:"Arial",fontSize:11,valign:"middle"}}; }); }
+    function dataRow(r,idx){
+      var fill = idx%2? "F7F5F5":"FFFFFF", t=rowTotal(r);
+      return [
+        {text:r.sku||"",options:{align:"left"}},
+        {text:r.description||"",options:{align:"left"}},
+        {text:r.quantity!=null?String(r.quantity):"",options:{align:"right"}},
+        {text:r.unit_price!=null?fmtMoney(r.unit_price,meta.currency):"",options:{align:"right"}},
+        {text:t!=null?fmtMoney(t,meta.currency):"",options:{align:"right"}}
+      ].map(function(c){ c.options=Object.assign({fill:{color:fill},color:"211E1E",fontFace:"Arial",fontSize:10.5,valign:"middle"},c.options); return c; });
+    }
+    function totalsRow(){
+      return [
+        {text:"",options:{fill:{color:"FFFFFF"}}},
+        {text:"TOTAL",options:{align:"right",bold:true,fill:{color:"EFEBEB"},color:"211E1E"}},
+        {text:"",options:{fill:{color:"EFEBEB"}}},
+        {text:"",options:{fill:{color:"EFEBEB"}}},
+        {text:fmtMoney(grandTotal(rows),meta.currency),options:{align:"right",bold:true,fill:{color:"EFEBEB"},color:BRAND.rojo}}
+      ].map(function(c){ c.options=Object.assign({fontFace:"Arial",fontSize:12,valign:"middle"},c.options); return c; });
+    }
+    var PER=14, pages=[];
+    for(var i=0;i<rows.length;i+=PER) pages.push(rows.slice(i,i+PER));
+    if(!pages.length) pages.push([]);
+    var startIdx=0;
+    pages.forEach(function(chunk,pi){
+      var slide=pptx.addSlide({masterName:"TG_BODY"});
+      var t=meta.title+(meta.client?("  —  "+meta.client):"")+(pages.length>1?("   ("+(pi+1)+"/"+pages.length+")"):"");
+      slide.addText(t,{x:0.5,y:0.32,w:12.3,h:0.5,fontFace:"Arial",fontSize:16,bold:true,color:"211E1E"});
+      var tbl=[headerRow()];
+      chunk.forEach(function(r,ci){ tbl.push(dataRow(r,startIdx+ci)); });
+      startIdx+=chunk.length;
+      if(pi===pages.length-1 && meta.showTotals) tbl.push(totalsRow());
+      slide.addTable(tbl,{
+        x:0.5,y:1.0,w:12.33,colW:[1.9,5.53,1.3,1.8,1.8],
+        border:{type:"solid",color:"E4E0E0",pt:0.5},
+        align:"left",valign:"middle",fontFace:"Arial",fontSize:10.5,margin:3
+      });
+    });
+    return pptx;
+  }
+
+  /* ============ PDF generation ============ */
+  function buildPdf(meta,rows){
+    var jsPDF=window.jspdf.jsPDF;
+    var doc=new jsPDF({orientation:"landscape",unit:"pt",format:"a4"});
+    var W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
+    var M=40;
+    // Header band
+    doc.setFillColor(225,37,27); doc.rect(0,0,W,6,"F");
+    if(LOGO_PNG){ try{ var pw=150, ph=pw*LOGO_H/LOGO_W; doc.addImage(LOGO_PNG,"PNG",M,26,pw,ph); }catch(e){} }
+    doc.setTextColor(33,30,30); doc.setFont("helvetica","bold"); doc.setFontSize(20);
+    doc.text(meta.title,M,92);
+    doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(91,86,84);
+    var meta1=[]; if(meta.client) meta1.push("Cliente: "+meta.client); meta1.push("Fecha: "+fmtDate(meta.date));
+    if(meta.seller) meta1.push("Vendedor: "+meta.seller);
+    var meta2=["Moneda: "+meta.currency]; if(meta.validity) meta2.push("Validez: "+meta.validity+" días");
+    doc.text(meta1.join("     "),M,110);
+    doc.text(meta2.join("     "),M,124);
+
+    var head=[["SKU / Código","Descripción","Cant.","Precio unit.","Total"]];
+    var bodyRows=rows.map(function(r){
+      var t=rowTotal(r);
+      return [r.sku||"", r.description||"", r.quantity!=null?String(r.quantity):"",
+              r.unit_price!=null?fmtMoney(r.unit_price,meta.currency):"",
+              t!=null?fmtMoney(t,meta.currency):""];
+    });
+    if(meta.showTotals) bodyRows.push([{content:"TOTAL",colSpan:4,styles:{halign:"right",fontStyle:"bold",fillColor:[239,235,235]}},
+      {content:fmtMoney(grandTotal(rows),meta.currency),styles:{halign:"right",fontStyle:"bold",textColor:[225,37,27],fillColor:[239,235,235]}}]);
+
+    doc.autoTable({
+      head:head, body:bodyRows, startY:140, margin:{left:M,right:M,bottom:52},
+      styles:{font:"helvetica",fontSize:9,cellPadding:6,textColor:[33,30,30],lineColor:[228,224,224],lineWidth:0.5,valign:"middle"},
+      headStyles:{fillColor:[225,37,27],textColor:[255,255,255],fontStyle:"bold"},
+      alternateRowStyles:{fillColor:[247,245,245]},
+      columnStyles:{0:{cellWidth:90},2:{halign:"right",cellWidth:50},3:{halign:"right",cellWidth:95},4:{halign:"right",cellWidth:100}},
+      didDrawPage:function(d){
+        doc.setFillColor(225,37,27); doc.rect(0,H-6,W,6,"F");
+        doc.setFontSize(8); doc.setTextColor(150,150,150); doc.setFont("helvetica","normal");
+        var foot="TecnoGlobal · www.tecnoglobal.cl"+(meta.validity?("   ·   Cotización válida por "+meta.validity+" días"):"");
+        doc.text(foot,M,H-16);
+        var pg="Página "+doc.internal.getNumberOfPages();
+        doc.text(pg,W-M-doc.getTextWidth(pg),H-16);
+      }
+    });
+    if(meta.notes){
+      var y=doc.lastAutoTable.finalY+18;
+      if(y>H-70){ doc.addPage(); y=60; }
+      doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(91,86,84); doc.text("Notas:",M,y);
+      doc.setFont("helvetica","normal"); doc.setTextColor(120,117,115);
+      doc.text(doc.splitTextToSize(meta.notes,W-2*M),M,y+14);
+    }
+    return doc;
+  }
+
+  function safeName(meta,ext){
+    var base="Cotizacion_TecnoGlobal";
+    if(meta.client) base+="_"+meta.client.replace(/[^a-z0-9]+/gi,"-").replace(/^-+|-+$/g,"");
+    base+="_"+meta.date;
+    return base+"."+ext;
+  }
+
+  /* ============ Actions ============ */
+  var cachedPptx=null, cachedPdf=null, cachedMeta=null;
+
+  function generate(){
+    var rows=cleanRows();
+    if(!rows.length){ toast("Agrega al menos un ítem con descripción o precio.","warn",false); return; }
+    var meta=collectMeta(); cachedMeta=meta;
+    var btn=$("#genBtn"); btn.disabled=true; var old=btn.innerHTML; btn.innerHTML='<span class="spinner"></span> Generando…';
+    setTimeout(function(){
+      try{
+        cachedPptx=buildPptx(meta,rows);
+        cachedPdf=buildPdf(meta,rows);
+        show("done");
+      }catch(err){ console.error(err); toast("Error al generar: "+(err.message||err),"warn",false); }
+      finally{ btn.disabled=false; btn.innerHTML=old; }
+    },30);
+  }
+  function downloadPptx(){ if(cachedPptx) cachedPptx.writeFile({fileName:safeName(cachedMeta,"pptx")}); }
+  function downloadPdf(){ if(cachedPdf) cachedPdf.save(safeName(cachedMeta,"pdf")); }
+
+  /* ============ Toast ============ */
+  function toast(msg,kind,persist){
+    var host=$("#reviewBanner")||document.body;
+    var b=document.createElement("div"); b.className="banner "+(kind||"warn");
+    b.innerHTML='<span>'+(kind==="ok"?"✓":"⚠")+'</span><div>'+esc(msg)+'</div><span class="x">✕</span>';
+    b.querySelector(".x").onclick=function(){ b.remove(); };
+    host.prepend(b);
+    if(!persist) setTimeout(function(){ b.remove(); },5000);
+  }
+
+  /* ============ Demo data ============ */
+  function demo(){
+    gotoReview({rows:[
+      {sku:"HP-M404DN",description:"Impresora HP LaserJet Pro M404dn",quantity:2,unit_price:289990,total:null},
+      {sku:"LOG-MK540",description:"Kit teclado y mouse inalámbrico Logitech MK540",quantity:5,unit_price:34990,total:null},
+      {sku:"DELL-24",description:'Monitor Dell 24" P2422H Full HD',quantity:3,unit_price:129990,total:null},
+      {sku:"APC-BX950",description:"UPS APC Back-UPS 950VA",quantity:1,unit_price:89990,total:null}
+    ], warnings:[]});
+    $("#m-client").value="Comercial Andes Ltda.";
+  }
+
+  /* ============ Theme ============ */
+  function initTheme(){
+    var saved=null; try{ saved=localStorage.getItem("tg-theme"); }catch(e){}
+    if(saved) document.documentElement.setAttribute("data-theme",saved);
+    $("#themeBtn").onclick=function(){
+      var cur=document.documentElement.getAttribute("data-theme");
+      var next = cur==="dark" ? "light" : (cur==="light" ? "dark" : (matchMedia("(prefers-color-scheme:dark)").matches?"light":"dark"));
+      document.documentElement.setAttribute("data-theme",next);
+      try{ localStorage.setItem("tg-theme",next); }catch(e){}
+    };
+  }
+
+  /* ============ Wire up ============ */
+  function init(){
+    $("#brandLogo").innerHTML=LOGO_SVG;   // instant paint; loadLogo may swap for official asset
+    $("#globalFoot").textContent="TecnoGlobal · Portal interno de autoatención · Los archivos se procesan localmente en tu navegador.";
+    initTheme();
+    loadLogo();
+    if(window.pdfjsLib && window.__PDF_WORKER__){ try{ pdfjsLib.GlobalWorkerOptions.workerSrc=window.__PDF_WORKER__; }catch(e){} }
+
+    // Gate
+    $("#g-enter").onclick=enterGate;
+    $("#g-name").addEventListener("keydown",function(e){ if(e.key==="Enter") enterGate(); });
+    function enterGate(){
+      var n=$("#g-name").value.trim();
+      if(!n){ $("#g-name").focus(); $("#g-name").style.borderColor="var(--rojo)"; return; }
+      state.salesperson=n; $("#whoami").textContent="Vendedor: "+n; show("upload");
+    }
+
+    // Upload
+    var dz=$("#dropzone"), fi=$("#fileInput");
+    dz.onclick=function(){ fi.click(); };
+    dz.addEventListener("keydown",function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); fi.click(); } });
+    dz.addEventListener("dragover",function(e){ e.preventDefault(); dz.classList.add("drag"); });
+    dz.addEventListener("dragleave",function(){ dz.classList.remove("drag"); });
+    dz.addEventListener("drop",function(e){ e.preventDefault(); dz.classList.remove("drag"); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+    fi.addEventListener("change",function(){ if(fi.files[0]){ handleFile(fi.files[0]); fi.value=""; } });
+    $("#blankBtn").onclick=function(){ gotoReview({rows:[blankRow(),blankRow(),blankRow()],warnings:[]}); };
+    $("#demoBtn").onclick=demo;
+
+    // Review
+    var body=$("#priceBody");
+    body.addEventListener("input",onGridInput);
+    body.addEventListener("click",onGridClick);
+    $("#addRow").onclick=function(){ state.rows.push(blankRow()); renderGrid(); recalc(); };
+    $("#m-currency").addEventListener("change",recalc);
+    $("#genBtn").onclick=generate;
+    $("#backUpload").onclick=function(){ show("upload"); };
+
+    // Done
+    $("#dlPptx").onclick=downloadPptx;
+    $("#dlPdf").onclick=downloadPdf;
+    $("#newQuote").onclick=function(){ state.rows=[]; cachedPptx=cachedPdf=null; $("#m-client").value=""; $("#m-notes").value=""; show("upload"); };
+  }
+
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
+})();
+</script>
+
+</body>
+</html>
