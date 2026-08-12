@@ -96,3 +96,7 @@ node tests/smoke.cjs   # sube un Excel, genera y valida PPTX + PDF
 ```
 
 Ver `tests/README.md` para detalles.
+
+## URL de producción (GitHub Pages)
+
+https://keepsync-hub.github.io/ks-tecnoglobal-mktg/
