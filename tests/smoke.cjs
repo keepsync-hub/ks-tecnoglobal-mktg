@@ -28,6 +28,7 @@ function sampleXlsx() {
     ["LOG-MK540", "Kit teclado y mouse Logitech MK540", 5, "$ 34.990"],
     ["DELL-P2422H", 'Monitor Dell 24" P2422H Full HD', 3, "129990"],
     ["APC-BX950", "UPS APC Back-UPS 950VA", 1, "89.990"],
+    ["", "TOTAL GENERAL", "", "$ 1.234.890"],
   ];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();

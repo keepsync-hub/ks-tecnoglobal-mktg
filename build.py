@@ -27,7 +27,6 @@ PAGES_LIBS = [
     "pptxgen.bundle.js",
     "jspdf.umd.min.js",
     "jspdf.plugin.autotable.min.js",
-    "pdf.min.js",
 ]
 ARTIFACT_LIBS = [
     "xlsx.full.min.js",
@@ -54,7 +53,6 @@ def split_source():
 def build_pages():
     head, body = split_source()
     tags = ['<script src="vendor/%s"></script>' % n for n in PAGES_LIBS]
-    tags.append('<script>window.__PDF_WORKER__="vendor/pdf.worker.min.js";</script>')
     body = body.replace("<!--__VENDOR__-->", "\n".join(tags))
     html = (
         "<!doctype html>\n<html lang=\"es\">\n<head>\n"
