@@ -271,10 +271,6 @@
           <label for="g-name">Nombre del vendedor</label>
           <input id="g-name" type="text" placeholder="Ej: María Fernández" autocomplete="name">
         </div>
-        <div class="field">
-          <label for="g-pin">Código de acceso <span class="muted" style="text-transform:none;letter-spacing:0">(opcional)</span></label>
-          <input id="g-pin" type="password" placeholder="Código interno de ventas">
-        </div>
         <button class="btn btn-primary" id="g-enter" style="width:100%">Ingresar</button>
       </div>
       <p class="footnote" style="text-align:center;padding:14px 0 0">
@@ -297,9 +293,8 @@
         <span class="chip">Excel .xlsx / .csv</span>
         <span class="chip">Word .docx</span>
         <span class="chip">PowerPoint .pptx</span>
-        <span class="chip soft">PDF (beta)</span>
       </div>
-      <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,.docx,.pptx,.pdf" hidden>
+      <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,.docx,.pptx" hidden>
     </div>
 
     <div class="or">o</div>
@@ -403,8 +398,6 @@
 <script src="vendor/pptxgen.bundle.js"></script>
 <script src="vendor/jspdf.umd.min.js"></script>
 <script src="vendor/jspdf.plugin.autotable.min.js"></script>
-<script src="vendor/pdf.min.js"></script>
-<script>window.__PDF_WORKER__="vendor/pdf.worker.min.js";</script>
 
 <script>
 "use strict";
@@ -529,6 +522,14 @@
     }
     return null;
   }
+  // Filas de resumen / total general: NO se capturan como productos (el total lo calcula el sistema).
+  var TOTAL_LABEL = /^(sub\s*total|total(?:es)?|total\s+general|total\s+neto|total\s+bruto|total\s+final|total\s+a\s+pagar|gran\s+total|monto\s+total|valor\s+total|importe\s+total|neto|iva|impuestos?|descuento)$/;
+  function isSummaryRow(obj){
+    var d = norm(obj.description);
+    if(d) return TOTAL_LABEL.test(d);
+    // Sin descripción ni SKU pero con un monto suelto => probable total general => descartar.
+    return !obj.sku && obj.quantity==null && (obj.unit_price!=null || obj.total!=null);
+  }
 
   /* ---- Normalize a raw matrix -> rows ---- */
   function normalizeMatrix(matrix){
@@ -563,6 +564,8 @@
         else if(f==="total") obj.total=coerceNumber(val);
         else obj[f]=String(val==null?"":val).trim();
       }
+      // Descartar filas de total general / resumen: el sistema calcula el total.
+      if(isSummaryRow(obj)) continue;
       // derive unit price from total/qty if missing
       if(obj.unit_price==null && obj.total!=null){
         var q=obj.quantity||1; if(q) obj.unit_price=obj.total/q;
@@ -649,43 +652,6 @@
     return biggestTable(matrices);
   }
 
-  /* ---- PDF (best-effort, beta) via pdf.js ---- */
-  function pageToMatrix(items){
-    var toks=items.filter(function(it){ return it.str && it.str.trim(); })
-                  .map(function(it){ return {x:it.transform[4], y:Math.round(it.transform[5]), s:it.str.trim()}; });
-    if(!toks.length) return [];
-    toks.sort(function(a,b){ return b.y-a.y || a.x-b.x; });
-    // group into lines by y proximity
-    var lines=[], cur=[], lastY=null, tol=4;
-    toks.forEach(function(t){
-      if(lastY==null || Math.abs(t.y-lastY)<=tol){ cur.push(t); lastY=(lastY==null?t.y:lastY); }
-      else { lines.push(cur); cur=[t]; lastY=t.y; }
-    });
-    if(cur.length) lines.push(cur);
-    // cluster x positions into columns
-    var xs=toks.map(function(t){ return t.x; }).sort(function(a,b){ return a-b; });
-    var clusters=[[xs[0]]], gap=28;
-    for(var i=1;i<xs.length;i++){ if(xs[i]-xs[i-1]>gap) clusters.push([]); clusters[clusters.length-1].push(xs[i]); }
-    var centers=clusters.map(function(c){ return c.reduce(function(a,b){return a+b;},0)/c.length; });
-    return lines.map(function(line){
-      var row=[]; for(var k=0;k<centers.length;k++) row.push("");
-      line.sort(function(a,b){ return a.x-b.x; });
-      line.forEach(function(t){
-        var best=0,bd=1e9; for(var c=0;c<centers.length;c++){ var d=Math.abs(t.x-centers[c]); if(d<bd){ bd=d; best=c; } }
-        row[best]=(row[best]?row[best]+" ":"")+t.s;
-      });
-      return row;
-    });
-  }
-  function parsePdf(u8){
-    return pdfjsLib.getDocument({data:u8}).promise.then(function(pdf){
-      var matrix=[], seq=Promise.resolve();
-      var run=function(pn){ return pdf.getPage(pn).then(function(page){ return page.getTextContent().then(function(tc){ matrix=matrix.concat(pageToMatrix(tc.items)); }); }); };
-      for(var p=1;p<=pdf.numPages;p++){ (function(pn){ seq=seq.then(function(){ return run(pn); }); })(p); }
-      return seq.then(function(){ return matrix; });
-    });
-  }
-
   /* ============ File intake ============ */
   function finishMatrix(matrix){
     var res=normalizeMatrix(matrix);
@@ -703,22 +669,8 @@
         else if(/\.csv$/.test(name)){ finishMatrix(parseXlsxOrCsv(decodeUTF8(new Uint8Array(reader.result)),true)); }
         else if(/\.docx$/.test(name)){ finishMatrix(parseDocx(new Uint8Array(reader.result))); }
         else if(/\.pptx$/.test(name)){ finishMatrix(parsePptx(new Uint8Array(reader.result))); }
-        else if(/\.pdf$/.test(name)){
-          if(window.pdfjsLib){
-            gotoReviewLoading();
-            parsePdf(new Uint8Array(reader.result)).then(function(matrix){
-              var res=normalizeMatrix(matrix);
-              res.warnings=(res.warnings||[]);
-              res.warnings.unshift("Extracción desde PDF en beta: revisa con cuidado filas y columnas, suelen requerir ajustes.");
-              gotoReview(res);
-            }).catch(function(e){
-              console.error(e);
-              gotoReview({rows:[], warnings:["No se pudo extraer la tabla del PDF automáticamente. Ingresa los datos manualmente o sube el archivo en Excel."]});
-            });
-          } else {
-            gotoReview({rows:[], warnings:["La extracción automática desde PDF no está disponible en esta versión. Ingresa la tabla manualmente o sube el archivo en Excel / Word / PowerPoint."]});
-          }
-        } else { toast("Formato no soportado.","warn",true); }
+        else if(/\.pdf$/.test(name)){ toast("Los archivos PDF no están permitidos. Sube Excel (.xlsx / .csv), Word (.docx) o PowerPoint (.pptx).","warn",true); }
+        else { toast("Formato no soportado. Usa Excel, Word o PowerPoint.","warn",true); }
       }catch(err){
         console.error(err);
         gotoReview({rows:[], warnings:["Ocurrió un problema al leer el archivo ("+(err.message||err)+"). Puedes ingresar la tabla manualmente."]});
@@ -726,11 +678,6 @@
     };
     reader.onerror=function(){ toast("No se pudo leer el archivo.","warn",true); };
     reader.readAsArrayBuffer(file);
-  }
-  function gotoReviewLoading(){
-    var b=$("#reviewBanner"); show("review");
-    b.innerHTML='<div class="banner ok"><span class="spinner" style="border-color:rgba(22,121,76,.35);border-top-color:var(--ok)"></span><div>Procesando PDF…</div></div>';
-    $("#priceBody").innerHTML=""; $("#t-count").textContent="0"; $("#t-sub").textContent="—"; $("#t-grand").textContent="—";
   }
 
   /* ============ Screens ============ */
@@ -1043,7 +990,6 @@
     $("#globalFoot").textContent="TecnoGlobal · Portal interno de autoatención · Los archivos se procesan localmente en tu navegador.";
     initTheme();
     loadLogo();
-    if(window.pdfjsLib && window.__PDF_WORKER__){ try{ pdfjsLib.GlobalWorkerOptions.workerSrc=window.__PDF_WORKER__; }catch(e){} }
 
     // Gate
     $("#g-enter").onclick=enterGate;

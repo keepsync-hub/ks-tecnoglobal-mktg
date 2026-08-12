@@ -23,10 +23,11 @@ Formatos de entrada soportados:
 | Excel `.xlsx` / `.csv` | ✅ Recomendado (extracción más confiable) |
 | Word `.docx` | ✅ Tablas |
 | PowerPoint `.pptx` | ✅ Tablas |
-| PDF | 🧪 Beta (extracción aproximada; revisa/corrige a mano) |
+| PDF | ❌ No permitido |
 
 La extracción es una **conveniencia**: si algo no se reconoce bien, la grilla siempre
-es editable, así que nunca quedas bloqueado.
+es editable, así que nunca quedas bloqueado. Las **filas de "total general"** del
+archivo se descartan al importar — el total lo **calcula el sistema**.
 
 ## Publicar en GitHub Pages
 
