@@ -15,7 +15,9 @@ Todo ocurre **en el navegador**: los archivos y precios no se envían a ningún 
    **contacto visible** en la cotización (para que el cliente pueda responderte). Tus datos
    se recuerdan en este navegador para la próxima vez.
 2. **Sube** el archivo con la tabla de precios (o empieza con una tabla en blanco).
-3. **Revisa y edita** la tabla y los datos (cliente, fecha, moneda, validez, notas). Elige el
+3. **Revisa y edita** la tabla y los datos (N° de cotización, cliente, fecha, moneda, validez,
+   notas). Cada cotización trae un **N° correlativo** (`COT-AAAA-NNNN`) para darle seguimiento;
+   se genera automáticamente y es editable. Elige el
    **tipo de cotización**: *suma de ítems* (con total general) o *alternativas* (varias
    opciones comparables, sin sumar un total). Los **términos y condiciones** vienen con un
    texto de ejemplo general (neutro de marca, sin mencionar fabricantes) que puedes ajustar; la
