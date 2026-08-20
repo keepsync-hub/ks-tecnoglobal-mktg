@@ -84,6 +84,10 @@ function assert(cond, msg) { if (!cond) throw new Error("ASSERT: " + msg); }
     assert(sEmail === "test.qa@tecnoglobal.cl", "correo vendedor no propagado: " + sEmail);
     assert(sPhone === "+56 9 1234 5678", "teléfono vendedor no propagado: " + sPhone);
 
+    // Los términos y condiciones vienen prefijados (texto de ejemplo editable).
+    const terms = await page.inputValue("#m-terms");
+    assert(terms && terms.trim().length > 0, "términos y condiciones no prefijados");
+
     // Modo "alternativas": oculta el total general del panel. Luego se vuelve a "suma".
     await page.selectOption("#m-mode", "alt");
     const grandHidden = await page.$eval("#t-grand-row", (el) => el.hidden);
@@ -95,6 +99,11 @@ function assert(cond, msg) { if (!cond) throw new Error("ASSERT: " + msg); }
     await page.click("#genBtn");
     await page.waitForSelector("#screen-done.active", { timeout: 10000 });
 
+    // La vista previa del PDF se muestra con un blob URL en el iframe.
+    await page.waitForSelector("#previewPane:not([hidden])", { timeout: 5000 });
+    const previewSrc = await page.getAttribute("#pdfPreview", "src");
+    assert(previewSrc && previewSrc.startsWith("blob:"), "vista previa sin blob URL: " + previewSrc);
+
     const outDir = require("os").tmpdir();
     const [dp] = await Promise.all([page.waitForEvent("download"), page.click("#dlPptx")]);
     const pptx = path.join(outDir, "tg-smoke.pptx"); await dp.saveAs(pptx);
@@ -105,7 +114,7 @@ function assert(cond, msg) { if (!cond) throw new Error("ASSERT: " + msg); }
     assert(fs.readFileSync(pdf).slice(0, 5).toString() === "%PDF-", "PDF inválido");
 
     assert(errors.length === 0, "errores de página: " + errors.join(" | "));
-    console.log("OK  rows=4  total=$1.234.890  vendedor✓  modo-alt✓  PPTX✓  PDF✓  sin errores");
+    console.log("OK  rows=4  total=$1.234.890  vendedor✓  modo-alt✓  terms✓  preview✓  PPTX✓  PDF✓  sin errores");
     await browser.close(); srv.close(); process.exit(0);
   } catch (e) {
     console.error("FALLO:", e.message, errors.length ? "| " + errors.join(" | ") : "");
