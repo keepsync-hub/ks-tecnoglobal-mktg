@@ -66,6 +66,8 @@ function assert(cond, msg) { if (!cond) throw new Error("ASSERT: " + msg); }
   try {
     await page.goto(base + "/index.html", { waitUntil: "networkidle" });
     await page.fill("#g-name", "Test QA");
+    await page.fill("#g-email", "test.qa@tecnoglobal.cl");
+    await page.fill("#g-phone", "+56 9 1234 5678");
     await page.click("#g-enter");
     await page.waitForSelector("#screen-upload.active", { timeout: 5000 });
 
@@ -75,6 +77,20 @@ function assert(cond, msg) { if (!cond) throw new Error("ASSERT: " + msg); }
     const grand = (await page.textContent("#t-grand")).replace(/\s/g, "");
     assert(rows === 4, "esperaba 4 filas, obtuve " + rows);
     assert(grand.includes("1.234.890"), "total inesperado: " + grand);
+
+    // Los datos del ejecutivo (correo/teléfono) se propagan al panel de la cotización.
+    const sEmail = await page.inputValue("#m-seller-email");
+    const sPhone = await page.inputValue("#m-seller-phone");
+    assert(sEmail === "test.qa@tecnoglobal.cl", "correo vendedor no propagado: " + sEmail);
+    assert(sPhone === "+56 9 1234 5678", "teléfono vendedor no propagado: " + sPhone);
+
+    // Modo "alternativas": oculta el total general del panel. Luego se vuelve a "suma".
+    await page.selectOption("#m-mode", "alt");
+    const grandHidden = await page.$eval("#t-grand-row", (el) => el.hidden);
+    assert(grandHidden === true, "en modo alternativas el total general debe ocultarse");
+    await page.selectOption("#m-mode", "sum");
+    const grandShown = await page.$eval("#t-grand-row", (el) => el.hidden);
+    assert(grandShown === false, "en modo suma el total general debe mostrarse");
 
     await page.click("#genBtn");
     await page.waitForSelector("#screen-done.active", { timeout: 10000 });
@@ -89,7 +105,7 @@ function assert(cond, msg) { if (!cond) throw new Error("ASSERT: " + msg); }
     assert(fs.readFileSync(pdf).slice(0, 5).toString() === "%PDF-", "PDF inválido");
 
     assert(errors.length === 0, "errores de página: " + errors.join(" | "));
-    console.log("OK  rows=4  total=$1.234.890  PPTX✓  PDF✓  sin errores");
+    console.log("OK  rows=4  total=$1.234.890  vendedor✓  modo-alt✓  PPTX✓  PDF✓  sin errores");
     await browser.close(); srv.close(); process.exit(0);
   } catch (e) {
     console.error("FALLO:", e.message, errors.length ? "| " + errors.join(" | ") : "");

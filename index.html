@@ -266,10 +266,18 @@
       <div class="card">
         <p class="eyebrow">Acceso vendedores</p>
         <h1 style="font-size:22px;margin:6px 0 6px">Identifícate para comenzar</h1>
-        <p class="lead" style="margin-bottom:22px">Tu nombre quedará registrado como responsable en la cotización generada.</p>
+        <p class="lead" style="margin-bottom:22px">Tus datos quedarán registrados como responsable y contacto en la cotización generada.</p>
         <div class="field">
           <label for="g-name">Nombre del vendedor</label>
-          <input id="g-name" type="text" placeholder="Ej: María Fernández" autocomplete="name">
+          <input id="g-name" type="text" placeholder="Ej: María Fernández" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="g-email">Correo</label>
+          <input id="g-email" type="email" placeholder="tu.correo@tecnoglobal.cl" autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="g-phone">Teléfono</label>
+          <input id="g-phone" type="tel" placeholder="+56 9 1234 5678" autocomplete="tel">
         </div>
         <button class="btn btn-primary" id="g-enter" style="width:100%">Ingresar</button>
       </div>
@@ -306,7 +314,7 @@
 
   <!-- ===== REVIEW ===== -->
   <section class="screen" id="screen-review">
-    <div id="reviewBanner"></div>
+    <div id="reviewBanner" aria-live="polite"></div>
     <div class="review-grid">
       <div class="card panel" id="metaPanel">
         <p class="eyebrow" style="margin-bottom:2px">Paso 2</p>
@@ -314,6 +322,8 @@
         <div class="field"><label for="m-title">Título</label><input id="m-title" type="text" value="Cotización TecnoGlobal"></div>
         <div class="field"><label for="m-client">Cliente</label><input id="m-client" type="text" placeholder="Nombre del cliente"></div>
         <div class="field"><label for="m-seller">Vendedor</label><input id="m-seller" type="text"></div>
+        <div class="field"><label for="m-seller-email">Correo vendedor</label><input id="m-seller-email" type="email" placeholder="correo@tecnoglobal.cl"></div>
+        <div class="field"><label for="m-seller-phone">Teléfono vendedor</label><input id="m-seller-phone" type="tel" placeholder="+56 9 ..."></div>
         <div class="field"><label for="m-date">Fecha</label><input id="m-date" type="date"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="field"><label for="m-currency">Moneda</label>
@@ -321,16 +331,18 @@
           </div>
           <div class="field"><label for="m-validity">Validez (días)</label><input id="m-validity" type="number" min="0" value="15"></div>
         </div>
-        <div class="field" style="flex-direction:row;align-items:center;gap:8px">
-          <input id="m-showtotals" type="checkbox" checked style="width:16px;height:16px">
-          <label for="m-showtotals" style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink)">Mostrar total general</label>
+        <div class="field"><label for="m-mode">Tipo de cotización</label>
+          <select id="m-mode">
+            <option value="sum">Suma de ítems (con total general)</option>
+            <option value="alt">Alternativas (sin total general)</option>
+          </select>
         </div>
         <div class="field"><label for="m-notes">Notas</label><textarea id="m-notes" rows="3" placeholder="Condiciones, despacho, etc."></textarea></div>
 
         <div class="totals">
           <div class="row"><span>Ítems</span><span class="num" id="t-count">0</span></div>
-          <div class="row"><span>Subtotal</span><span class="num" id="t-sub">—</span></div>
-          <div class="row grand"><span>Total</span><span class="num" id="t-grand">—</span></div>
+          <div class="row" id="t-sub-row"><span>Subtotal</span><span class="num" id="t-sub">—</span></div>
+          <div class="row grand" id="t-grand-row"><span>Total</span><span class="num" id="t-grand">—</span></div>
         </div>
       </div>
 
@@ -464,6 +476,8 @@
   /* ---- State ---- */
   var state = {
     salesperson:"",
+    sellerEmail:"",
+    sellerPhone:"",
     rows:[],            // [{sku,description,quantity,unit_price}]
     meta:{}
   };
@@ -714,6 +728,8 @@
       b.appendChild(d2);
     }
     $("#m-seller").value = state.salesperson || "";
+    if(!$("#m-seller-email").value) $("#m-seller-email").value = state.sellerEmail || "";
+    if(!$("#m-seller-phone").value) $("#m-seller-phone").value = state.sellerPhone || "";
     if(!$("#m-date").value) $("#m-date").value = todayISO();
     renderGrid(); recalc(); show("review");
   }
@@ -760,25 +776,35 @@
     state.rows.splice(i,1); if(!state.rows.length) state.rows.push(blankRow());
     renderGrid(); recalc();
   }
+  function quoteMode(){ var el=$("#m-mode"); return el?el.value:"sum"; }
   function recalc(){
     var sub=0, any=false;
     state.rows.forEach(function(r){ var t=rowTotal(r); if(t!=null){ sub+=t; any=true; } });
     $("#t-count").textContent=state.rows.filter(function(r){return r.description||r.unit_price!=null;}).length;
     $("#t-sub").textContent=any?fmtMoney(sub,curr()):"—";
     $("#t-grand").textContent=any?fmtMoney(sub,curr()):"—";
+    // In "alternatives" mode the rows are options to compare, not a list to sum:
+    // hide the running subtotal/grand total in the panel.
+    var showSum = quoteMode()==="sum";
+    $("#t-sub-row").hidden = !showSum;
+    $("#t-grand-row").hidden = !showSum;
     // refresh visible totals currency
     $$("#priceBody tr").forEach(function(tr){ var i=+tr.getAttribute("data-i"); tr.querySelector("[data-total]").textContent=fmtMoney(rowTotal(state.rows[i]),curr()); });
   }
 
   function collectMeta(){
+    var mode=quoteMode();
     return {
       title:$("#m-title").value||"Cotización TecnoGlobal",
       client:$("#m-client").value||"",
       seller:$("#m-seller").value||state.salesperson||"",
+      sellerEmail:$("#m-seller-email").value||state.sellerEmail||"",
+      sellerPhone:$("#m-seller-phone").value||state.sellerPhone||"",
       date:$("#m-date").value||todayISO(),
       currency:curr(),
       validity:$("#m-validity").value||"",
-      showTotals:$("#m-showtotals").checked,
+      mode:mode,
+      showTotals:mode==="sum",
       notes:$("#m-notes").value||""
     };
   }
@@ -821,6 +847,8 @@
     if(meta.client) info.push([{text:"Cliente:  ",options:{bold:true}},{text:meta.client}]);
     info.push([{text:"Fecha:  ",options:{bold:true}},{text:fmtDate(meta.date)}]);
     if(meta.seller) info.push([{text:"Vendedor:  ",options:{bold:true}},{text:meta.seller}]);
+    if(meta.sellerEmail) info.push([{text:"Correo:  ",options:{bold:true}},{text:meta.sellerEmail}]);
+    if(meta.sellerPhone) info.push([{text:"Teléfono:  ",options:{bold:true}},{text:meta.sellerPhone}]);
     info.push([{text:"Moneda:  ",options:{bold:true}},{text:meta.currency}]);
     if(meta.validity) info.push([{text:"Validez:  ",options:{bold:true}},{text:meta.validity+" días"}]);
     var infoRuns=[]; info.forEach(function(line,idx){ line.forEach(function(r){ infoRuns.push({text:r.text,options:Object.assign({fontFace:"Arial",fontSize:15,color:"5B5654"},r.options||{})}); }); if(idx<info.length-1) infoRuns.push({text:"\n",options:{fontSize:15}}); });
@@ -885,7 +913,11 @@
     doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(91,86,84);
     var meta1=[]; if(meta.client) meta1.push("Cliente: "+meta.client); meta1.push("Fecha: "+fmtDate(meta.date));
     if(meta.seller) meta1.push("Vendedor: "+meta.seller);
-    var meta2=["Moneda: "+meta.currency]; if(meta.validity) meta2.push("Validez: "+meta.validity+" días");
+    var meta2=[];
+    if(meta.sellerEmail) meta2.push("Correo: "+meta.sellerEmail);
+    if(meta.sellerPhone) meta2.push("Tel: "+meta.sellerPhone);
+    meta2.push("Moneda: "+meta.currency);
+    if(meta.validity) meta2.push("Validez: "+meta.validity+" días");
     doc.text(meta1.join("     "),M,110);
     doc.text(meta2.join("     "),M,124);
 
@@ -991,13 +1023,29 @@
     initTheme();
     loadLogo();
 
-    // Gate
+    // Gate — prefill from a previous session (name/email/phone persisted locally).
+    try{
+      var sv=localStorage.getItem("tg-seller"); if(sv) $("#g-name").value=sv;
+      var se=localStorage.getItem("tg-seller-email"); if(se) $("#g-email").value=se;
+      var sp=localStorage.getItem("tg-seller-phone"); if(sp) $("#g-phone").value=sp;
+    }catch(e){}
     $("#g-enter").onclick=enterGate;
-    $("#g-name").addEventListener("keydown",function(e){ if(e.key==="Enter") enterGate(); });
+    ["g-name","g-email","g-phone"].forEach(function(id){
+      $("#"+id).addEventListener("keydown",function(e){ if(e.key==="Enter") enterGate(); });
+    });
+    $("#g-name").addEventListener("input",function(){ $("#g-name").removeAttribute("aria-invalid"); $("#g-name").style.borderColor=""; });
     function enterGate(){
       var n=$("#g-name").value.trim();
-      if(!n){ $("#g-name").focus(); $("#g-name").style.borderColor="var(--rojo)"; return; }
-      state.salesperson=n; $("#whoami").textContent="Vendedor: "+n; show("upload");
+      if(!n){ $("#g-name").focus(); $("#g-name").setAttribute("aria-invalid","true"); $("#g-name").style.borderColor="var(--rojo)"; return; }
+      state.salesperson=n;
+      state.sellerEmail=$("#g-email").value.trim();
+      state.sellerPhone=$("#g-phone").value.trim();
+      try{
+        localStorage.setItem("tg-seller",n);
+        localStorage.setItem("tg-seller-email",state.sellerEmail);
+        localStorage.setItem("tg-seller-phone",state.sellerPhone);
+      }catch(e){}
+      $("#whoami").textContent="Vendedor: "+n; show("upload");
     }
 
     // Upload
@@ -1017,6 +1065,7 @@
     body.addEventListener("click",onGridClick);
     $("#addRow").onclick=function(){ state.rows.push(blankRow()); renderGrid(); recalc(); };
     $("#m-currency").addEventListener("change",recalc);
+    $("#m-mode").addEventListener("change",recalc);
     $("#genBtn").onclick=generate;
     $("#backUpload").onclick=function(){ show("upload"); };
 

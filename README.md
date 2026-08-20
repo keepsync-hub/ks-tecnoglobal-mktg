@@ -11,9 +11,13 @@ Todo ocurre **en el navegador**: los archivos y precios no se envían a ningún 
 
 ## Cómo se usa
 
-1. **Identifícate** con tu nombre (queda como responsable de la cotización).
+1. **Identifícate** con tu **nombre, correo y teléfono**. Quedas como responsable y
+   **contacto visible** en la cotización (para que el cliente pueda responderte). Tus datos
+   se recuerdan en este navegador para la próxima vez.
 2. **Sube** el archivo con la tabla de precios (o empieza con una tabla en blanco).
-3. **Revisa y edita** la tabla y los datos (cliente, fecha, moneda, validez, notas).
+3. **Revisa y edita** la tabla y los datos (cliente, fecha, moneda, validez, notas). Elige el
+   **tipo de cotización**: *suma de ítems* (con total general) o *alternativas* (varias
+   opciones comparables, sin sumar un total).
 4. **Genera** y descarga el PPTX y/o el PDF.
 
 Formatos de entrada soportados:
