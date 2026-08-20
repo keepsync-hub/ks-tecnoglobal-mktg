@@ -754,14 +754,14 @@
     return "Validez de la oferta: "+days+" días a partir de la fecha de emisión ("+fmtDate(meta.date)+")"
          + (until?(" — vigente hasta el "+fmtDate(until)):"")+".";
   }
-  // Términos y condiciones de ejemplo, generales y NEUTROS DE MARCA (HP, ASUS, Lenovo, etc.).
+  // Términos y condiciones de ejemplo, generales y NEUTROS DE MARCA (sin mencionar fabricantes).
   // El ejecutivo puede editarlos por cotización; se prefijan solo si el campo está vacío.
   var DEFAULT_TERMS = [
     "Precios y disponibilidad: La oferta está sujeta a la disponibilidad de stock al momento de confirmar la compra. Los precios pueden ajustarse sin previo aviso por variaciones en el tipo de cambio, reposición de inventario o modificaciones de los fabricantes.",
     "Tiempos de entrega: El plazo final de entrega se confirmará de acuerdo con la disponibilidad de inventario al recibir la orden de compra.",
     "Garantía: La garantía de los productos se rige por las políticas, términos y plazos establecidos por el fabricante respectivo.",
     "Moneda e impuestos: Los valores están expresados en la moneda indicada y no incluyen IVA, salvo que se señale lo contrario.",
-    "Precios de programa: Los precios de programas especiales del fabricante (p. ej. HP Connect, ASUS, Lenovo) son válidos solo con la oportunidad registrada y vigente en la plataforma correspondiente.",
+    "Precios de programa: Los precios de programas especiales del fabricante son válidos solo con la oportunidad registrada y vigente en la plataforma correspondiente.",
     "Condiciones adicionales: Cualquier condición comercial adicional (despacho, formas de pago, etc.) debe acordarse por escrito."
   ].join("\n\n");
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }

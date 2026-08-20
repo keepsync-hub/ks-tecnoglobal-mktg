@@ -18,7 +18,7 @@ Todo ocurre **en el navegador**: los archivos y precios no se envían a ningún 
 3. **Revisa y edita** la tabla y los datos (cliente, fecha, moneda, validez, notas). Elige el
    **tipo de cotización**: *suma de ítems* (con total general) o *alternativas* (varias
    opciones comparables, sin sumar un total). Los **términos y condiciones** vienen con un
-   texto de ejemplo general (neutro de marca: HP, ASUS, Lenovo, etc.) que puedes ajustar; la
+   texto de ejemplo general (neutro de marca, sin mencionar fabricantes) que puedes ajustar; la
    **validez** de la oferta se incluye automáticamente con su fecha de vencimiento.
 4. **Genera**, revisa la **vista previa del PDF** en pantalla y descarga el PPTX y/o el PDF.
 
