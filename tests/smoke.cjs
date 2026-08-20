@@ -84,9 +84,11 @@ function assert(cond, msg) { if (!cond) throw new Error("ASSERT: " + msg); }
     assert(sEmail === "test.qa@tecnoglobal.cl", "correo vendedor no propagado: " + sEmail);
     assert(sPhone === "+56 9 1234 5678", "teléfono vendedor no propagado: " + sPhone);
 
-    // Los términos y condiciones vienen prefijados (texto de ejemplo editable).
+    // Los términos y condiciones vienen prefijados (texto de ejemplo editable) con las cláusulas clave.
     const terms = await page.inputValue("#m-terms");
     assert(terms && terms.trim().length > 0, "términos y condiciones no prefijados");
+    assert(terms.includes("Precios y disponibilidad") && terms.includes("Garantía"),
+      "faltan cláusulas clave en los términos y condiciones");
 
     // Modo "alternativas": oculta el total general del panel. Luego se vuelve a "suma".
     await page.selectOption("#m-mode", "alt");
