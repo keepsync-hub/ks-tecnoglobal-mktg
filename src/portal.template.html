@@ -318,6 +318,7 @@
         <p class="eyebrow" style="margin-bottom:2px">Paso 2</p>
         <h3 style="margin-top:2px">Datos de la cotización</h3>
         <div class="field"><label for="m-title">Título</label><input id="m-title" type="text" value="Cotización TecnoGlobal"></div>
+        <div class="field"><label for="m-folio">N° de cotización</label><input id="m-folio" type="text" placeholder="COT-2026-0001" autocomplete="off"></div>
         <div class="field"><label for="m-client">Cliente</label><input id="m-client" type="text" placeholder="Nombre del cliente"></div>
         <div class="field"><label for="m-seller">Vendedor</label><input id="m-seller" type="text"></div>
         <div class="field"><label for="m-seller-email">Correo vendedor</label><input id="m-seller-email" type="email" placeholder="correo@tecnoglobal.cl"></div>
@@ -732,12 +733,33 @@
     if(!$("#m-seller-email").value) $("#m-seller-email").value = state.sellerEmail || "";
     if(!$("#m-seller-phone").value) $("#m-seller-phone").value = state.sellerPhone || "";
     if(!$("#m-date").value) $("#m-date").value = todayISO();
+    if(!$("#m-folio").value.trim()) $("#m-folio").value = peekFolio();
     if(!$("#m-terms").value.trim()) $("#m-terms").value = DEFAULT_TERMS;
     renderGrid(); recalc(); show("review");
   }
   function blankRow(){ return {sku:"",description:"",quantity:1,unit_price:null,total:null}; }
   function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
   function pad(n){ return (n<10?"0":"")+n; }
+  function pad4(n){ n=String(n); while(n.length<4) n="0"+n; return n; }
+
+  /* ---- Correlativo / N° de cotización (secuencial por navegador, para seguimiento) ----
+     Se persiste en localStorage como "AAAA:seq" y reinicia la numeración cada año.
+     Formato COT-AAAA-NNNN. Editable: si el vendedor escribe un folio propio, no se
+     toca el contador. */
+  function readFolioStore(){
+    try{ var s=localStorage.getItem("tg-folio"); if(s){ var p=s.split(":"); return {year:parseInt(p[0],10)||0, seq:parseInt(p[1],10)||0}; } }catch(e){}
+    return {year:0, seq:0};
+  }
+  function peekFolio(){
+    var y=new Date().getFullYear(), st=readFolioStore();
+    var seq=(st.year===y? st.seq:0)+1;
+    return "COT-"+y+"-"+pad4(seq);
+  }
+  function commitFolio(folio){
+    var m=/^COT-(\d{4})-(\d+)$/.exec(String(folio||"")); if(!m) return;   // folio propio -> no tocar el contador
+    var fy=parseInt(m[1],10), fn=parseInt(m[2],10), st=readFolioStore();
+    if(st.year!==fy || fn>st.seq){ try{ localStorage.setItem("tg-folio", fy+":"+fn); }catch(e){} }
+  }
   // Fecha ISO (yyyy-mm-dd) + n días -> ISO, para calcular el vencimiento de la oferta.
   function addDays(iso,n){
     var p=String(iso||"").split("-"); if(p.length!==3) return "";
@@ -824,6 +846,7 @@
     var mode=quoteMode();
     return {
       title:$("#m-title").value||"Cotización TecnoGlobal",
+      folio:$("#m-folio").value.trim(),
       client:$("#m-client").value||"",
       seller:$("#m-seller").value||state.salesperson||"",
       sellerEmail:$("#m-seller-email").value||state.sellerEmail||"",
@@ -873,6 +896,7 @@
     if(LOGO_PNG) cover.addImage({data:LOGO_PNG,x:0.7,y:1.0,w:cw,h:ch});
     cover.addText(meta.title,{x:0.7,y:2.5,w:12,h:1.0,fontFace:"Arial",fontSize:34,bold:true,color:"211E1E"});
     var info=[];
+    if(meta.folio) info.push([{text:"N° de cotización:  ",options:{bold:true,color:BRAND.rojo}},{text:meta.folio,options:{bold:true,color:BRAND.rojo}}]);
     if(meta.client) info.push([{text:"Cliente:  ",options:{bold:true}},{text:meta.client}]);
     info.push([{text:"Fecha:  ",options:{bold:true}},{text:fmtDate(meta.date)}]);
     if(meta.seller) info.push([{text:"Vendedor:  ",options:{bold:true}},{text:meta.seller}]);
@@ -950,6 +974,11 @@
     if(LOGO_PNG){ try{ var pw=150, ph=pw*LOGO_H/LOGO_W; doc.addImage(LOGO_PNG,"PNG",M,26,pw,ph); }catch(e){} }
     doc.setTextColor(33,30,30); doc.setFont("helvetica","bold"); doc.setFontSize(20);
     doc.text(meta.title,M,92);
+    if(meta.folio){
+      doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(225,37,27);
+      var fTxt="N° "+meta.folio;
+      doc.text(fTxt,W-M-doc.getTextWidth(fTxt),44);
+    }
     doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(91,86,84);
     var meta1=[]; if(meta.client) meta1.push("Cliente: "+meta.client); meta1.push("Fecha: "+fmtDate(meta.date));
     if(meta.seller) meta1.push("Vendedor: "+meta.seller);
@@ -1006,7 +1035,9 @@
   }
 
   function safeName(meta,ext){
-    var base="Cotizacion_TecnoGlobal";
+    var base="";
+    if(meta.folio) base+=meta.folio.replace(/[^a-z0-9]+/gi,"-").replace(/^-+|-+$/g,"")+"_";
+    base+="Cotizacion_TecnoGlobal";
     if(meta.client) base+="_"+meta.client.replace(/[^a-z0-9]+/gi,"-").replace(/^-+|-+$/g,"");
     base+="_"+meta.date;
     return base+"."+ext;
@@ -1040,6 +1071,7 @@
       try{
         cachedPptx=buildPptx(meta,rows);
         cachedPdf=buildPdf(meta,rows);
+        commitFolio(meta.folio);
         showPreview(cachedPdf);
         show("done");
       }catch(err){ console.error(err); toast("Error al generar: "+(err.message||err),"warn",false); }
@@ -1138,7 +1170,7 @@
     // Done
     $("#dlPptx").onclick=downloadPptx;
     $("#dlPdf").onclick=downloadPdf;
-    $("#newQuote").onclick=function(){ state.rows=[]; cachedPptx=cachedPdf=null; clearPreview(); $("#m-client").value=""; $("#m-notes").value=""; show("upload"); };
+    $("#newQuote").onclick=function(){ state.rows=[]; cachedPptx=cachedPdf=null; clearPreview(); $("#m-client").value=""; $("#m-notes").value=""; $("#m-folio").value=""; show("upload"); };
   }
 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();

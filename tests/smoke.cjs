@@ -90,6 +90,10 @@ function assert(cond, msg) { if (!cond) throw new Error("ASSERT: " + msg); }
     assert(terms.includes("Precios y disponibilidad") && terms.includes("Garantía"),
       "faltan cláusulas clave en los términos y condiciones");
 
+    // El correlativo / N° de cotización viene prefijado con el formato COT-AAAA-NNNN.
+    const folio = await page.inputValue("#m-folio");
+    assert(/^COT-\d{4}-\d+$/.test(folio), "folio con formato inesperado: " + folio);
+
     // Modo "alternativas": oculta el total general del panel. Luego se vuelve a "suma".
     await page.selectOption("#m-mode", "alt");
     const grandHidden = await page.$eval("#t-grand-row", (el) => el.hidden);
@@ -108,6 +112,8 @@ function assert(cond, msg) { if (!cond) throw new Error("ASSERT: " + msg); }
 
     const outDir = require("os").tmpdir();
     const [dp] = await Promise.all([page.waitForEvent("download"), page.click("#dlPptx")]);
+    // El nombre de archivo incorpora el correlativo para trazabilidad.
+    assert(dp.suggestedFilename().indexOf(folio) === 0, "el nombre del PPTX no inicia con el folio: " + dp.suggestedFilename());
     const pptx = path.join(outDir, "tg-smoke.pptx"); await dp.saveAs(pptx);
     assert(fs.readFileSync(pptx).slice(0, 2).toString() === "PK", "PPTX no es un ZIP válido");
 
@@ -116,7 +122,7 @@ function assert(cond, msg) { if (!cond) throw new Error("ASSERT: " + msg); }
     assert(fs.readFileSync(pdf).slice(0, 5).toString() === "%PDF-", "PDF inválido");
 
     assert(errors.length === 0, "errores de página: " + errors.join(" | "));
-    console.log("OK  rows=4  total=$1.234.890  vendedor✓  modo-alt✓  terms✓  preview✓  PPTX✓  PDF✓  sin errores");
+    console.log("OK  rows=4  total=$1.234.890  vendedor✓  modo-alt✓  terms✓  folio=" + folio + "  preview✓  PPTX✓  PDF✓  sin errores");
     await browser.close(); srv.close(); process.exit(0);
   } catch (e) {
     console.error("FALLO:", e.message, errors.length ? "| " + errors.join(" | ") : "");
