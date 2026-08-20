@@ -344,7 +344,7 @@
           </select>
         </div>
         <div class="field"><label for="m-notes">Notas</label><textarea id="m-notes" rows="3" placeholder="Condiciones, despacho, etc."></textarea></div>
-        <div class="field"><label for="m-terms">Términos y condiciones</label><textarea id="m-terms" rows="6" placeholder="Condiciones comerciales de la cotización"></textarea></div>
+        <div class="field"><label for="m-terms">Términos y condiciones</label><textarea id="m-terms" rows="9" placeholder="Condiciones comerciales de la cotización"></textarea></div>
 
         <div class="totals">
           <div class="row"><span>Ítems</span><span class="num" id="t-count">0</span></div>
@@ -769,13 +769,13 @@
   // Términos y condiciones de ejemplo, generales y NEUTROS DE MARCA (HP, ASUS, Lenovo, etc.).
   // El ejecutivo puede editarlos por cotización; se prefijan solo si el campo está vacío.
   var DEFAULT_TERMS = [
-    "• Valores expresados en la moneda indicada; no incluyen IVA salvo que se señale lo contrario.",
-    "• Precios y disponibilidad sujetos a stock; pueden variar sin previo aviso por reposición de inventario, tipo de cambio o ajustes de precio del fabricante.",
-    "• Los precios de programas especiales del fabricante (p. ej. HP Connect, ASUS, Lenovo) son válidos solo con la oportunidad registrada y vigente en la plataforma correspondiente.",
-    "• El plazo de entrega queda sujeto a la disponibilidad de stock al momento de recibir la orden de compra.",
-    "• Garantía según las condiciones del fabricante de cada producto.",
-    "• Cualquier condición comercial adicional (despacho, formas de pago, etc.) debe acordarse por escrito."
-  ].join("\n");
+    "Precios y disponibilidad: La oferta está sujeta a la disponibilidad de stock al momento de confirmar la compra. Los precios pueden ajustarse sin previo aviso por variaciones en el tipo de cambio, reposición de inventario o modificaciones de los fabricantes.",
+    "Tiempos de entrega: El plazo final de entrega se confirmará de acuerdo con la disponibilidad de inventario al recibir la orden de compra.",
+    "Garantía: La garantía de los productos se rige por las políticas, términos y plazos establecidos por el fabricante respectivo.",
+    "Moneda e impuestos: Los valores están expresados en la moneda indicada y no incluyen IVA, salvo que se señale lo contrario.",
+    "Precios de programa: Los precios de programas especiales del fabricante (p. ej. HP Connect, ASUS, Lenovo) son válidos solo con la oportunidad registrada y vigente en la plataforma correspondiente.",
+    "Condiciones adicionales: Cualquier condición comercial adicional (despacho, formas de pago, etc.) debe acordarse por escrito."
+  ].join("\n\n");
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
 
   /* ============ Editable grid ============ */
